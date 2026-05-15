@@ -67,6 +67,9 @@ yarn-error.log*
 # Docker
 .docker/
 
+# Claude Code
+.claude/
+
 # Logs
 *.log
 logs/
