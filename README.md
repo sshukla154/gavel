@@ -22,12 +22,20 @@ Maven multi-module monorepo with one service today (`hello-service`) and shared 
 ```bash
 # Build and run all tests
 mvn clean verify
+```
 
+```bash
 # Start hello-service locally
 mvn -pl services/hello-service -am spring-boot:run
+```
 
+```bash
 # In a second terminal
 curl http://localhost:8081/api/v1/ping
+```
+
+```bash
+# In a second terminal
 curl http://localhost:8081/actuator/health
 ```
 
