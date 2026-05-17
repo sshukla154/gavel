@@ -1,0 +1,31 @@
+# Compiled output — never send target directories to the Docker daemon
+**/target/
+**/.classpath
+**/.project
+**/.settings/
+
+# IDE
+.idea/
+**/*.iml
+**/.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Claude worktrees and session data
+.claude/
+
+# Infra configs and docs — not needed inside the image
+infra/
+docker-compose.yaml
+docs/
+*.md
+*.MD
+
+# GitHub Actions workflow definitions
+.github/
+
+# Logs
+*.log
+*.log.*

@@ -7,6 +7,14 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 ## [Unreleased]
 
 ### Added
+- Multi-stage Dockerfile: `deps` → `build` → `extractor` → runtime (Temurin 21 JRE, non-root UID 1001, Spring Boot layered jar)
+- GitHub Actions CI workflow (`ci.yml`): build + test (including Testcontainers) → Docker build → GHCR push
+- GHCR image `ghcr.io/sshukla154/gavel/hello-service` tagged with branch, short SHA, and `latest` on `shukla`
+- `.dockerignore` to strip `target/`, `.idea/`, `.git/`, `infra/`, `docs/` from build context
+- CI badge in README
+- Explicit `container_name: gavel-*` on all Docker Compose services
+
+### Added (0.2)
 - Docker Compose stack: PostgreSQL 16, OTel Collector, Prometheus, Grafana 12, Tempo, Loki
 - JPA persistence layer: `Visit` entity, `VisitRepository`, `VisitService`
 - Flyway migration `V1__create_visits_table.sql` — `visits` table with BIGSERIAL PK

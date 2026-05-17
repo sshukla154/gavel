@@ -6,7 +6,7 @@
 |---|---|---|
 | Maven monorepo + hello-service | ✅ Done | 0.1 |
 | PostgreSQL + Flyway + observability stack | ✅ Done | 0.2 |
-| Multi-stage Docker + CI to GHCR | 📋 Planned | 0.3 |
+| Multi-stage Docker + CI to GHCR | ✅ Done | 0.3 |
 | kind + Helm + ArgoCD GitOps | 📋 Planned | 0.4 |
 
 ## Phase 1 — Identity + Angular shell

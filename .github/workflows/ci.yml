@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [shukla, main]
+  pull_request:
+    branches: [shukla, main]
+
+# GITHUB_TOKEN needs packages:write to push to GHCR.
+# contents:read is the minimum for checkout.
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+
+  # ─── Job 1: compile, unit tests, integration tests ─────────────────────────
+  build-and-test:
+    name: Build & test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven   # caches ~/.m2 between runs keyed on pom.xml hash
+
+      # mvn verify runs:
+      #   surefire  → *Test.java  (PingControllerTest — @SpringBootTest + Testcontainers)
+      #   failsafe  → *IT.java    (VisitPersistenceIT — Testcontainers Postgres)
+      # GitHub-hosted ubuntu-latest exposes the Docker socket, so Testcontainers
+      # works with no additional configuration.
+      - name: Run tests
+        run: mvn -B verify
+
+      # Preserve reports when a test fails so they can be downloaded from the
+      # Actions run summary for diagnosis.
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+          retention-days: 7
+
+  # ─── Job 2: Docker build and GHCR push ─────────────────────────────────────
+  docker:
+    name: Docker build & push
+    runs-on: ubuntu-latest
+    needs: build-and-test   # never publish an image from a failed build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Buildx adds multi-platform support and the GHA layer cache backend.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Only authenticate on push events — PRs from forks cannot access secrets.
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Derive image tags and OCI labels from git metadata.
+      # Tags produced:
+      #   push to shukla  → ghcr.io/sshukla154/gavel/hello-service:shukla
+      #                   → ghcr.io/sshukla154/gavel/hello-service:sha-<short>
+      #                   → ghcr.io/sshukla154/gavel/hello-service:latest
+      #   pull request    → ghcr.io/sshukla154/gavel/hello-service:pr-<N>
+      #                   → ghcr.io/sshukla154/gavel/hello-service:sha-<short>
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/sshukla154/gavel/hello-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/shukla' }}
+
+      # Build the image using the repo-root Dockerfile.
+      # cache-from/to: type=gha stores Docker layer cache in the GitHub Actions
+      # cache store — subsequent builds reuse the deps and build stages and
+      # typically complete in under 2 minutes.
+      # push is false on PRs (image is built to validate the Dockerfile, not pushed).
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
