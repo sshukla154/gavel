@@ -5,7 +5,7 @@
 | Feature | Status | Checkpoint |
 |---|---|---|
 | Maven monorepo + hello-service | ✅ Done | 0.1 |
-| PostgreSQL + Flyway + observability stack | 📋 Planned | 0.2 |
+| PostgreSQL + Flyway + observability stack | ✅ Done | 0.2 |
 | Multi-stage Docker + CI to GHCR | 📋 Planned | 0.3 |
 | kind + Helm + ArgoCD GitOps | 📋 Planned | 0.4 |
 

@@ -2,7 +2,7 @@
 
 ## Current state
 
-Only `hello-service` exists. It serves a single `/api/v1/ping` endpoint, uses Spring Boot 4.0.6 on Java 21 with virtual threads, and exposes Actuator for health/metrics. No database, no messaging, no observability stack yet.
+`hello-service` is the only running service. It serves `GET /api/v1/ping`, persists a `Visit` record per call to PostgreSQL via Flyway-managed schema, and emits traces/metrics/logs via the OpenTelemetry SDK to the local collector stack.
 
 ## Target system
 
@@ -28,12 +28,6 @@ Only `hello-service` exists. It serves a single `/api/v1/ping` endpoint, uses Sp
                         │  │  (Phase 0.2) │ (Ph. 2) │ (Ph. 2) │  (Ph. 3)  │   │
                         │  └──────────────────────────────────────────────┘   │
                         └─────────────────────────────────────────────────────┘
-
-                        ┌─────────────────────────────────────────────────────┐
-                        │  Observability (Phase 0.2)                           │
-                        │  OTel Collector → Prometheus / Tempo / Loki          │
-                        │  Grafana dashboards                                  │
-                        └─────────────────────────────────────────────────────┘
 ```
 
 ## Services
@@ -51,8 +45,18 @@ Only `hello-service` exists. It serves a single `/api/v1/ping` endpoint, uses Sp
 gavel/
 ├── pom.xml                  # parent POM (aggregator + dep management)
 ├── common/                  # gavel-common: shared DTOs, ApiResponse, ProblemDetails
+├── infra/                   # Docker Compose infrastructure configs
+│   ├── otel-collector/
+│   ├── prometheus/
+│   ├── grafana/
+│   ├── tempo/
+│   └── loki/
 └── services/
     └── hello-service/       # one folder per service
+        └── src/main/java/com/shukla/gavel/hello/
+            ├── api/         # controllers and response DTOs
+            ├── domain/      # entities, repositories, services
+            └── infrastructure/  # framework-specific config
 ```
 
 ## API conventions
@@ -63,8 +67,21 @@ gavel/
 
 ## Observability
 
-Planned for Phase 0.2: each service emits traces/metrics/logs via the OpenTelemetry SDK to a local OTel Collector, which fans out to:
-- **Prometheus** (metrics scraping)
-- **Tempo** (trace storage)
-- **Loki** (log aggregation)
-- **Grafana** (unified dashboards)
+Each service emits telemetry via the OpenTelemetry SDK. The OTel Collector acts as the single ingestion point and fans out to the appropriate backend.
+
+```
+  hello-service (OTLP HTTP :4318)
+        │
+        ▼
+  OTel Collector
+  ├── Traces  ──▶  Tempo  (trace storage, query via Grafana Explore)
+  ├── Metrics ──▶  Prometheus  (scrape :8889, query via Grafana dashboards)
+  └── Logs    ──▶  Loki  (log aggregation, query via Grafana Explore)
+                        │
+                        ▼
+                    Grafana  (unified dashboards at localhost:3000)
+```
+
+Prometheus also scrapes `hello-service` directly at `/actuator/prometheus` (`host.docker.internal:8081`) for JVM and HTTP metrics.
+
+The Grafana `hello-service` dashboard shows request rate, p99 latency, JVM heap usage, and total visit count.
