@@ -4,14 +4,14 @@ Operations guide for the Docker Compose stack used in local development.
 
 ## Stack overview
 
-| Container | Image | Port(s) | Purpose |
+| Container name | Image | Port(s) | Purpose |
 |---|---|---|---|
-| postgres | postgres:16-alpine | 5432 | Primary database |
-| otel-collector | otel/opentelemetry-collector-contrib:0.127.0 | 4317, 4318, 8889 | Telemetry ingestion |
-| prometheus | prom/prometheus:v3.4.0 | 9090 | Metrics storage |
-| grafana | grafana/grafana:12.0.0 | 3000 | Dashboards |
-| tempo | grafana/tempo:2.7.2 | 3200 | Trace storage |
-| loki | grafana/loki:3.4.2 | 3100 | Log aggregation |
+| gavel-postgres | postgres:16-alpine | 5432 | Primary database |
+| gavel-otel-collector | otel/opentelemetry-collector-contrib:0.127.0 | 4317, 4318, 8889 | Telemetry ingestion |
+| gavel-prometheus | prom/prometheus:v3.4.0 | 9090 | Metrics storage |
+| gavel-grafana | grafana/grafana:12.0.0 | 3000 | Dashboards |
+| gavel-tempo | grafana/tempo:2.7.2 | 3200 | Trace storage |
+| gavel-loki | grafana/loki:3.4.2 | 3100 | Log aggregation |
 
 ## Start and stop
 
