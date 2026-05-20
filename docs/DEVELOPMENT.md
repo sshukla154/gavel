@@ -57,7 +57,7 @@ docker compose down -v
 docker compose up -d
 ```
 
-## Run hello-service locally
+## Run auction-service locally
 
 > **Windows note:** the system default `JAVA_HOME` may point at a non-21 JDK. Prefix Maven commands with the override below, or set `JAVA_HOME` permanently in your user environment variables.
 > ```powershell
@@ -69,19 +69,19 @@ With the Compose stack running:
 
 ```bash
 # Start the service — Flyway runs on startup, then Tomcat on port 8081
-mvn -pl services/hello-service -am spring-boot:run
+mvn -pl services/auction-service -am spring-boot:run
 
 # In a second terminal
 curl http://localhost:8081/api/v1/ping
 curl http://localhost:8081/actuator/health
 ```
 
-The `-am` flag builds `gavel-common` first so hello-service has its dependency.
+The `-am` flag builds `gavel-common` first so auction-service has its dependency.
 
 Expected ping response:
 
 ```json
-{"data":{"status":"ok","service":"hello-service","totalVisits":1},"timestamp":"..."}
+{"data":{"status":"ok","service":"auction-service","totalVisits":1},"timestamp":"..."}
 ```
 
 `totalVisits` increments on every call.
@@ -91,7 +91,7 @@ Expected ping response:
 1. **Open**: File → Open → select the root `pom.xml`, open as project.
 2. **SDK**: File → Project Structure → SDKs → add JDK 21 if not present. Set Project SDK and language level to 21.
 3. **Maven**: IntelliJ auto-imports. If not, right-click `pom.xml` → Maven → Reimport.
-4. **Run config**: Right-click `HelloApplication.java` → Run. The embedded Tomcat starts on 8081.
+4. **Run config**: Right-click `AuctionApplication.java` → Run. The embedded Tomcat starts on 8081.
 5. **EditorConfig**: IntelliJ respects `.editorconfig` natively — no plugin needed.
 
 ## Project structure
@@ -111,21 +111,21 @@ gavel/
 │       ├── api/ApiResponse.java
 │       └── error/ProblemDetails.java
 └── services/
-    └── hello-service/
-        ├── src/main/java/com/shukla/gavel/hello/
-        │   ├── HelloApplication.java
+    └── auction-service/
+        ├── src/main/java/com/shukla/gavel/auction/
+        │   ├── AuctionApplication.java
         │   ├── api/                     # PingController, PingResponse
         │   ├── domain/                  # Visit, VisitRepository, VisitService
-        │   └── infrastructure/          # TomcatNio2Config
+        │   └── infrastructure/          # TomcatNio2Config, FlywayMigrationConfiguration
         ├── src/main/resources/
         │   ├── application.yaml
         │   ├── application-local.yaml
+        │   ├── application-prod.yaml
         │   ├── logback-spring.xml
         │   └── db/migration/            # Flyway SQL scripts
-        └── src/test/java/com/shukla/gavel/hello/
+        └── src/test/java/com/shukla/gavel/auction/
             ├── PingControllerTest.java
-            ├── VisitPersistenceIT.java
-            └── TestcontainersConfiguration.java
+            └── VisitPersistenceIT.java
 ```
 
 ## Troubleshooting

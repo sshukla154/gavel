@@ -6,16 +6,16 @@ A real-time auction platform built as a senior-engineer portfolio project.
 
 | Item | State |
 |---|---|
-| Phase | 0.3 — CI / Docker |
-| hello-service | Running on Java 21 / Spring Boot 4.0.6 |
+| Phase | 0.4 — kind + Helm + ArgoCD GitOps |
+| auction-service | Running on Java 21 / Spring Boot 4.0.6 |
 | Database | PostgreSQL 16 via Flyway — wired |
 | Observability | OTel Collector → Prometheus / Tempo / Loki / Grafana |
-| CI / Docker | GitHub Actions → GHCR (`ghcr.io/sshukla154/gavel/hello-service`) |
-| Kubernetes | Not yet (Phase 0.4) |
+| CI / Docker | GitHub Actions → GHCR (`ghcr.io/sshukla154/gavel/auction-service`) |
+| Kubernetes | kind cluster + Helm chart + ArgoCD GitOps |
 
 ## Architecture
 
-Maven multi-module monorepo with one service today (`hello-service`) and shared code in `gavel-common`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system picture and planned services.
+Maven multi-module monorepo with one service today (`auction-service`) and shared code in `gavel-common`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system picture and planned services.
 
 ## Quickstart
 
@@ -30,8 +30,8 @@ docker compose up -d
 ```
 
 ```bash
-# Start hello-service against the Compose Postgres
-mvn -pl services/hello-service -am spring-boot:run
+# Start auction-service against the Compose Postgres
+mvn -pl services/auction-service -am spring-boot:run
 ```
 
 ```bash
@@ -45,7 +45,7 @@ Grafana is available at [http://localhost:3000](http://localhost:3000) (admin / 
 
 ```bash
 # Pull the latest image (built from the shukla branch)
-docker pull ghcr.io/sshukla154/gavel/hello-service:latest
+docker pull ghcr.io/sshukla154/gavel/auction-service:latest
 
 # Run against an existing Postgres instance
 docker run --rm \
@@ -53,7 +53,7 @@ docker run --rm \
   -e SPRING_DATASOURCE_USERNAME=postgres \
   -e SPRING_DATASOURCE_PASSWORD=postgres \
   -p 8081:8081 \
-  ghcr.io/sshukla154/gavel/hello-service:latest
+  ghcr.io/sshukla154/gavel/auction-service:latest
 ```
 
 The image runs as UID 1001 and exposes port 8081. Flyway migrations run on startup; a Postgres instance must be reachable. The Actuator health endpoint at `/actuator/health` is wired as the Docker HEALTHCHECK.
@@ -66,7 +66,7 @@ The image runs as UID 1001 and exposes port 8081. Flyway migrations run on start
 - OpenTelemetry → Prometheus / Tempo / Loki / Grafana
 - Maven multi-module monorepo
 - Angular (frontend — Phase 1)
-- Kubernetes / Helm / ArgoCD (Phase 0.4)
+- Kubernetes / Helm / ArgoCD (Phase 0.4 — done)
 
 ## Documentation
 

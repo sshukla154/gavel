@@ -32,13 +32,13 @@ kubectl get nodes
 
 ---
 
-## 2. Load the hello-service image into kind
+## 2. Load the auction-service image into kind
 
 kind clusters are isolated from the host Docker daemon. Pull and load the image manually so ArgoCD can deploy it without internet access:
 
 ```bash
-docker pull ghcr.io/sshukla154/gavel/hello-service:shukla
-kind load docker-image ghcr.io/sshukla154/gavel/hello-service:shukla --name gavel
+docker pull ghcr.io/sshukla154/gavel/auction-service:shukla
+kind load docker-image ghcr.io/sshukla154/gavel/auction-service:shukla --name gavel
 ```
 
 ---
@@ -91,14 +91,14 @@ Apply both Application manifests. ArgoCD will sync the desired state from git:
 
 ```bash
 kubectl apply -f k8s/argocd/postgres-app.yaml
-kubectl apply -f k8s/argocd/hello-service-app.yaml
+kubectl apply -f k8s/argocd/auction-service-app.yaml
 ```
 
 Watch sync progress:
 
 ```bash
 argocd app list
-argocd app get hello-service
+argocd app get auction-service
 argocd app get postgres
 ```
 
@@ -108,24 +108,24 @@ Or from the ArgoCD UI if you opened the port-forward above.
 
 ## 7. Verify the deployment
 
-Wait for the hello-service pod to be ready:
+Wait for the auction-service pod to be ready:
 
 ```bash
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=hello-service \
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=auction-service \
   -n gavel --timeout=120s
 ```
 
 Port-forward the service and smoke-test the ping endpoint:
 
 ```bash
-kubectl port-forward svc/hello-service -n gavel 8081:8081
+kubectl port-forward svc/auction-service -n gavel 8081:8081
 curl http://localhost:8081/api/v1/ping
 ```
 
 Expected response:
 
 ```json
-{"data":{"status":"ok","service":"hello-service","totalVisits":1},"timestamp":"..."}
+{"data":{"status":"ok","service":"auction-service","totalVisits":1},"timestamp":"..."}
 ```
 
 Check liveness and readiness probes:
@@ -141,13 +141,13 @@ curl http://localhost:8081/actuator/health/readiness
 
 Every push to the `shukla` branch:
 1. CI builds and pushes a new image tagged `sha-<short>` to GHCR.
-2. The `update-helm-tag` CI job updates `helm/hello-service/values.yaml` with the new tag and pushes a `[skip ci]` commit.
+2. The `update-helm-tag` CI job updates `helm/auction-service/values.yaml` with the new tag and pushes a `[skip ci]` commit.
 3. ArgoCD detects the values.yaml change (polling every 3 minutes by default) and rolls out the new image.
 
 To force an immediate sync:
 
 ```bash
-argocd app sync hello-service
+argocd app sync auction-service
 ```
 
 ---
@@ -157,7 +157,7 @@ argocd app sync hello-service
 Delete just the applications (leaves the cluster running):
 
 ```bash
-kubectl delete -f k8s/argocd/hello-service-app.yaml
+kubectl delete -f k8s/argocd/auction-service-app.yaml
 kubectl delete -f k8s/argocd/postgres-app.yaml
 ```
 

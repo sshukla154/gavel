@@ -3,8 +3,8 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # hello-service running on the host (outside Docker)
-  - job_name: hello-service
+  # auction-service running on the host (outside Docker)
+  - job_name: auction-service
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["host.docker.internal:8081"]

@@ -1,6 +1,0 @@
-apiVersion: v2
-name: hello-service
-description: Gavel hello-service — walking-skeleton Spring Boot service
-type: application
-version: 0.1.0
-appVersion: "0.1.0-SNAPSHOT"

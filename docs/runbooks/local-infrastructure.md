@@ -56,22 +56,22 @@ Three datasources are pre-provisioned: Prometheus, Tempo, Loki. If any datasourc
 docker compose restart otel-collector
 ```
 
-The `hello-service` dashboard is under **Dashboards → Gavel**. It shows request rate, p99 latency, JVM heap, and total visit count.
+The `auction-service` dashboard is under **Dashboards → Gavel**. It shows request rate, p99 latency, JVM heap, and total visit count.
 
 ## Check Prometheus targets
 
 Open [http://localhost:9090/targets](http://localhost:9090/targets).
 
-- `hello-service` scrapes `/actuator/prometheus` on `host.docker.internal:8081`. This target is **UP** only when hello-service is running on the host.
+- `auction-service` scrapes `/actuator/prometheus` on `host.docker.internal:8081`. This target is **UP** only when auction-service is running on the host.
 - `otel-collector` scrapes the collector's `:8889` metrics endpoint. This should always be **UP** when the stack is running.
 
 ## Query traces in Grafana
 
 1. Open Grafana → Explore → select **Tempo** datasource.
-2. Use **Search** tab → Service Name: `hello-service` → Run query.
+2. Use **Search** tab → Service Name: `auction-service` → Run query.
 3. Click any trace to see the span waterfall.
 
-Alternatively, copy a `traceId` from a hello-service log line and paste it directly into Tempo's **TraceQL** tab.
+Alternatively, copy a `traceId` from a auction-service log line and paste it directly into Tempo's **TraceQL** tab.
 
 ## Common issues
 
@@ -87,9 +87,9 @@ taskkill /PID <pid> /F
 
 Check logs: `docker compose logs postgres`. Most likely a volume permissions issue. Fix: `docker compose down -v` then `docker compose up -d`.
 
-**`hello-service` target is DOWN in Prometheus**
+**`auction-service` target is DOWN in Prometheus**
 
-`host.docker.internal` only resolves when Docker Desktop is running and hello-service is actually up on port 8081. Start the service first.
+`host.docker.internal` only resolves when Docker Desktop is running and auction-service is actually up on port 8081. Start the service first.
 
 **OTel Collector crashes on startup**
 

@@ -1,0 +1,22 @@
+# Local kind-cluster overrides.
+# Apply with: helm upgrade --install auction-service ./helm/auction-service \
+#               -f helm/auction-service/values-local.yaml -n gavel --create-namespace
+
+image:
+  # Use the branch tag when running locally; no need to rebuild on every SHA.
+  tag: shukla
+
+env:
+  SPRING_PROFILES_ACTIVE: local
+  # OTel Collector is deployed by docker-compose on the host; route to host gateway
+  # from inside kind using the host-gateway alias (added in kind extraMounts or via
+  # "host.docker.internal" if enabled).
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4318
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi

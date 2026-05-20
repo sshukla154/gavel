@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
-# Multi-stage build for hello-service.
+# Multi-stage build for auction-service.
 #
 # Stage layout:
 #   deps      — downloads all external Maven dependencies.
 #               Keyed on pom files + gavel-common source only, so a code-only
-#               change in hello-service reuses this layer and skips the ~2-min
+#               change in auction-service reuses this layer and skips the ~2-min
 #               dependency download.
 #   build     — full source compile and package (tests skipped; CI already ran them).
 #   extractor — splits the fat jar into Spring Boot layers so the dependency
@@ -19,7 +19,7 @@ WORKDIR /build
 # Copy only pom files first — this layer changes only when dependencies change.
 COPY pom.xml .
 COPY common/pom.xml common/
-COPY services/hello-service/pom.xml services/hello-service/
+COPY services/auction-service/pom.xml services/auction-service/
 
 # gavel-common is a project-local module, not available from any remote repo.
 # Copy its source so Maven can compile and install it into the local .m2 cache.
@@ -27,15 +27,15 @@ COPY common/src common/src
 
 # 1. Install the root (parent) POM into the local cache.
 #    -N = non-recursive; builds only the aggregator, not child modules.
-#    Required because gavel-common and hello-service both declare this POM
+#    Required because gavel-common and auction-service both declare this POM
 #    as their parent and Maven must be able to resolve it.
 # 2. Install gavel-common into the local cache.
-# 3. Resolve all external dependencies (compile + test scope) for hello-service.
+# 3. Resolve all external dependencies (compile + test scope) for auction-service.
 #    dependency:resolve-plugins also pre-fetches Maven plugin artifacts, preventing
 #    surprise network calls in the build stage.
 RUN mvn -B -N install && \
     mvn -B -pl common install -DskipTests && \
-    mvn -B -pl services/hello-service \
+    mvn -B -pl services/auction-service \
         dependency:resolve \
         dependency:resolve-plugins \
         -DincludeScope=test \
@@ -51,14 +51,14 @@ COPY --from=deps /root/.m2 /root/.m2
 # Copy full source tree (invalidates only when application source changes).
 COPY . .
 
-# Build hello-service and its reactor dependencies; skip tests (CI ran them).
-RUN mvn -B -pl services/hello-service -am -DskipTests package
+# Build auction-service and its reactor dependencies; skip tests (CI ran them).
+RUN mvn -B -pl services/auction-service -am -DskipTests package
 
 # ─── Stage 3: extract Spring Boot layers ─────────────────────────────────────
 FROM eclipse-temurin:21-jre-jammy AS extractor
 WORKDIR /extract
 
-COPY --from=build /build/services/hello-service/target/hello-service-*.jar app.jar
+COPY --from=build /build/services/auction-service/target/auction-service-*.jar app.jar
 
 # Spring Boot 4 jarmode=tools splits the fat jar into four layers.
 # Layer order (least-to-most volatile):

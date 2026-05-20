@@ -2,7 +2,7 @@
 
 ## Current state
 
-`hello-service` is the only running service. It serves `GET /api/v1/ping`, persists a `Visit` record per call to PostgreSQL via Flyway-managed schema, and emits traces/metrics/logs via the OpenTelemetry SDK to the local collector stack.
+`auction-service` is the only running service. It serves `GET /api/v1/ping`, persists a `Visit` record per call to PostgreSQL via Flyway-managed schema, and emits traces/metrics/logs via the OpenTelemetry SDK to the local collector stack.
 
 ## Target system
 
@@ -18,8 +18,8 @@
                         │              ┌─────────────────────┼────────────┐    │
                         │              ▼                     ▼            ▼    │
                         │  ┌──────────────────┐  ┌────────────────┐  ┌──────┐ │
-                        │  │  hello-service   │  │  auction-svc   │  │  ..  │ │
-                        │  │  (Phase 0)       │  │  (Phase 2)     │  │      │ │
+                        │  │ auction-service  │  │  bid-service   │  │  ..  │ │
+                        │  │  (Phase 0+)      │  │  (Phase 2)     │  │      │ │
                         │  └────────┬─────────┘  └───────┬────────┘  └──────┘ │
                         │           │                     │                    │
                         │           ▼                     ▼                    │
@@ -34,8 +34,7 @@
 
 | Service | Package | Phase | Responsibility |
 |---|---|---|---|
-| hello-service | `com.shukla.gavel.hello` | 0 | Walking skeleton; proves the pipeline |
-| auction-service | `com.shukla.gavel.auction` | 2 | Auction lifecycle, bid events |
+| auction-service | `com.shukla.gavel.auction` | 0+ | Auction lifecycle, bid events, visit tracking |
 | identity-service | `com.shukla.gavel.identity` | 1 | Auth via Keycloak integration |
 | notification-service | `com.shukla.gavel.notification` | 3 | Email / push on bid events |
 
@@ -52,8 +51,8 @@ gavel/
 │   ├── tempo/
 │   └── loki/
 └── services/
-    └── hello-service/       # one folder per service
-        └── src/main/java/com/shukla/gavel/hello/
+    └── auction-service/     # one folder per service
+        └── src/main/java/com/shukla/gavel/auction/
             ├── api/         # controllers and response DTOs
             ├── domain/      # entities, repositories, services
             └── infrastructure/  # framework-specific config
@@ -70,7 +69,7 @@ gavel/
 Each service emits telemetry via the OpenTelemetry SDK. The OTel Collector acts as the single ingestion point and fans out to the appropriate backend.
 
 ```
-  hello-service (OTLP HTTP :4318)
+  auction-service (OTLP HTTP :4318)
         │
         ▼
   OTel Collector
@@ -82,6 +81,6 @@ Each service emits telemetry via the OpenTelemetry SDK. The OTel Collector acts 
                     Grafana  (unified dashboards at localhost:3000)
 ```
 
-Prometheus also scrapes `hello-service` directly at `/actuator/prometheus` (`host.docker.internal:8081`) for JVM and HTTP metrics.
+Prometheus also scrapes `auction-service` directly at `/actuator/prometheus` (`host.docker.internal:8081`) for JVM and HTTP metrics.
 
-The Grafana `hello-service` dashboard shows request rate, p99 latency, JVM heap usage, and total visit count.
+The Grafana `auction-service` dashboard shows request rate, p99 latency, JVM heap usage, and total visit count.
