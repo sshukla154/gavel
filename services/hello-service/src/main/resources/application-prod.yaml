@@ -1,0 +1,7 @@
+# Production overrides — JSON-structured logging (ECS format).
+# Activated when SPRING_PROFILES_ACTIVE=prod (set via Helm values / Kubernetes env var).
+# Structured ECS logs ship directly to Loki via the OTel Collector log pipeline.
+logging:
+  structured:
+    format:
+      console: ecs

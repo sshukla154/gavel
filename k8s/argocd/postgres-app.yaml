@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: postgresql
+    # Pin to the PostgreSQL 16 chart line; ArgoCD will not auto-upgrade majors.
+    targetRevision: "16.x.x"
+    helm:
+      values: |
+        auth:
+          database: hello_db
+          username: postgres
+          password: postgres
+          postgresPassword: postgres
+        primary:
+          persistence:
+            size: 1Gi
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gavel
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

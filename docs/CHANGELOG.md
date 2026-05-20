@@ -6,6 +6,16 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (0.4)
+- Helm chart `helm/hello-service`: Deployment, Service, Secret, ServiceAccount templates with liveness/readiness probes and resource limits
+- kind cluster config `k8s/kind/cluster-config.yaml` — single control-plane node named `gavel`
+- Bitnami PostgreSQL Helm values `k8s/postgres/values.yaml`
+- ArgoCD Application manifests: `k8s/argocd/hello-service-app.yaml`, `k8s/argocd/postgres-app.yaml`
+- CI GitOps loop: `update-helm-tag` job writes new image SHA back to `helm/hello-service/values.yaml` on every push to `shukla` — ArgoCD picks it up automatically
+- `application-prod.yaml`: ECS-format JSON structured logging (`logging.structured.format.console: ecs`) active under `prod` Spring profile
+- Graceful shutdown (`server.shutdown: graceful`, `timeout-per-shutdown-phase: 30s`) and Kubernetes liveness/readiness actuator probes
+- Runbook: `docs/runbooks/local-kubernetes.md`
+
 ### Added
 - Multi-stage Dockerfile: `deps` → `build` → `extractor` → runtime (Temurin 21 JRE, non-root UID 1001, Spring Boot layered jar)
 - GitHub Actions CI workflow (`ci.yml`): build + test (including Testcontainers) → Docker build → GHCR push

@@ -1,0 +1,9 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: gavel
+nodes:
+  - role: control-plane
+    # Pre-pull the hello-service image into the kind node so ArgoCD doesn't
+    # need to reach GHCR. Load after creating the cluster with:
+    #   docker pull ghcr.io/sshukla154/gavel/hello-service:shukla
+    #   kind load docker-image ghcr.io/sshukla154/gavel/hello-service:shukla --name gavel

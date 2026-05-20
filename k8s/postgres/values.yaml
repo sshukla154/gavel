@@ -1,0 +1,25 @@
+# Bitnami PostgreSQL Helm chart values for the Gavel kind cluster.
+# Minimal single-replica setup — no HA, local dev only.
+#
+# Install:
+#   helm repo add bitnami https://charts.bitnami.com/bitnami
+#   helm upgrade --install postgres bitnami/postgresql \
+#     -f k8s/postgres/values.yaml -n gavel --create-namespace
+
+auth:
+  database: hello_db
+  username: postgres
+  password: postgres
+  postgresPassword: postgres
+
+primary:
+  persistence:
+    size: 1Gi
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
