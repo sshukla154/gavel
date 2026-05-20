@@ -72,6 +72,7 @@ The image runs as UID 1001 and exposes port 8081. Flyway migrations run on start
 
 | Doc | Purpose |
 |---|---|
+| [OPERATIONS.md](docs/OPERATIONS.md) | Installation, configuration, start/stop/verify for all three modes |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, service map, data flow |
 | [DEVELOPMENT.md](docs/DEVELOPMENT.md) | Local setup, build, run, test |
 | [FEATURES.md](docs/FEATURES.md) | What's built, in progress, planned |
