@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gavel-apps
+  namespace: argocd
+  # Deleting this application will cascade-delete all child applications and
+  # their cluster resources. Remove the finalizer first if you want to delete
+  # only the parent app.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sshukla154/gavel.git
+    targetRevision: shukla
+    # ArgoCD will apply every *.yaml file in this directory as a raw manifest.
+    # Adding a new service means adding a new *-app.yaml here and committing.
+    path: k8s/argocd
+    directory:
+      recurse: false
+      # Exclude this file itself to avoid a self-referencing loop.
+      exclude: app-of-apps.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

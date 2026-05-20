@@ -1,0 +1,14 @@
+auction-service has been deployed.
+
+Forward the service port to your local machine:
+
+  kubectl port-forward svc/{{ include "auction-service.fullname" . }} 8081:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+
+Then verify the service is healthy:
+
+  curl http://localhost:8081/actuator/health
+  curl http://localhost:8081/api/v1/ping
+
+Liveness probe:   GET /actuator/health/liveness
+Readiness probe:  GET /actuator/health/readiness
+Metrics:          GET /actuator/prometheus

@@ -1,0 +1,39 @@
+version: 2
+
+updates:
+  # Maven dependencies — check weekly on Monday mornings.
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - java
+    groups:
+      # Group Spring Boot managed dependencies so they upgrade together.
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework:*"
+      # Group OTel SDK updates.
+      opentelemetry:
+        patterns:
+          - "io.opentelemetry:*"
+          - "io.micrometer:*"
+
+  # GitHub Actions — keep action versions current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
