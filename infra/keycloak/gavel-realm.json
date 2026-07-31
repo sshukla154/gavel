@@ -1,0 +1,66 @@
+{
+  "realm": "gavel",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "verifyEmail": false,
+  "requiredActions": [
+    {
+      "alias": "VERIFY_PROFILE",
+      "name": "Verify Profile",
+      "providerId": "VERIFY_PROFILE",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 90,
+      "config": {}
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "gavel-test-client",
+      "name": "Gavel Test Client",
+      "description": "Public client used for local testing and integration tests (ROPC flow).",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect"
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "BIDDER",
+        "description": "Can place bids and view auctions"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "bidder",
+      "email": "bidder@gavel.test",
+      "firstName": "Bidder",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        { "type": "password", "value": "bidder", "temporary": false }
+      ],
+      "realmRoles": ["BIDDER"]
+    },
+    {
+      "username": "guest",
+      "email": "guest@gavel.test",
+      "firstName": "Guest",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        { "type": "password", "value": "guest", "temporary": false }
+      ]
+    }
+  ]
+}

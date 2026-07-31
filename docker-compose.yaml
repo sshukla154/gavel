@@ -95,6 +95,26 @@ services:
       - tempo
       - loki
 
+  keycloak:
+    container_name: gavel-keycloak
+    image: quay.io/keycloak/keycloak:26.2
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "8180:8080"   # host 8180 → container 8080 (avoids conflict with other local services)
+    networks:
+      - gavel-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+
 networks:
   gavel-net:
     driver: bridge

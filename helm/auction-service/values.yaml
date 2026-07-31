@@ -30,6 +30,7 @@ resources:
 env:
   SPRING_PROFILES_ACTIVE: prod
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/gavel
 
 # Datasource credentials — stored as a Kubernetes Secret.
 secret:

@@ -1,0 +1,9 @@
+# Test-classpath override: point the JWT decoder at a non-existent URL so the
+# Spring Security context loads without a real Keycloak instance. Tests that
+# need real JWT validation (KeycloakAuthIT) override this via @DynamicPropertySource.
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9999/mock-jwks

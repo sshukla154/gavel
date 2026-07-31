@@ -16,6 +16,15 @@ spring:
       ddl-auto: validate
     open-in-view: false
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # JWK URI is derived from the issuer URI. No startup OIDC discovery — the decoder
+          # fetches keys lazily on first request. Set KEYCLOAK_ISSUER_URI in the environment
+          # (or via Helm values) to point at the correct Keycloak realm.
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/gavel}/protocol/openid-connect/certs
+
 server:
   port: 8081
   shutdown: graceful

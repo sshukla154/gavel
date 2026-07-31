@@ -12,6 +12,8 @@ env:
   # from inside kind using the host-gateway alias (added in kind extraMounts or via
   # "host.docker.internal" if enabled).
   OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4318
+  # Keycloak is deployed by docker-compose on the host (port 8180 on host → 8080 in container).
+  KEYCLOAK_ISSUER_URI: http://host.docker.internal:8180/realms/gavel
 
 ingress:
   enabled: true

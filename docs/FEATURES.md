@@ -13,7 +13,7 @@
 
 | Feature | Status | Checkpoint |
 |---|---|---|
-| Keycloak integration | 📋 Planned | 1.1 |
+| Keycloak integration | ⏳ In progress | 1.1 |
 | Angular project skeleton | 📋 Planned | 1.2 |
 | JWT propagation to services | 📋 Planned | 1.3 |
 

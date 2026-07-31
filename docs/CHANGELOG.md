@@ -6,6 +6,17 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (1.1 — Keycloak / OAuth2 resource server)
+- Keycloak 26 added to Docker Compose on host port 8180 with realm import from `infra/keycloak/gavel-realm.json`
+- `gavel-realm.json`: realm `gavel`, role `BIDDER`, users `bidder` (with role) and `guest` (without)
+- `spring-boot-starter-oauth2-resource-server` dependency in auction-service
+- `SecurityConfig`: stateless JWT resource server, `/actuator/health/**` public, `/api/**` requires `BIDDER` role
+- `KeycloakJwtRolesConverter`: extracts `realm_access.roles` claims into `ROLE_*` authorities
+- `KeycloakAuthIT`: real end-to-end integration test using `testcontainers-keycloak` — verifies 401, 403, and 200 paths
+- `PingControllerTest` updated: `springSecurity()` applied to MockMvc; 401 and 403 cases added alongside the existing 200 case
+- Helm chart: `KEYCLOAK_ISSUER_URI` env var wired in `values.yaml`, `values-local.yaml`, and `deployment.yaml`
+- ADR 0007: Keycloak as identity provider
+
 ### Added (0.4)
 - Helm chart `helm/auction-service`: Deployment, Service, Secret, ServiceAccount templates with liveness/readiness probes and resource limits
 - kind cluster config `k8s/kind/cluster-config.yaml` — single control-plane node named `gavel`

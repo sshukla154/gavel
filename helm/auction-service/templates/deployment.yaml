@@ -28,6 +28,8 @@ spec:
               value: {{ .Values.env.SPRING_PROFILES_ACTIVE | quote }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+            - name: KEYCLOAK_ISSUER_URI
+              value: {{ .Values.env.KEYCLOAK_ISSUER_URI | quote }}
             - name: SPRING_DATASOURCE_URL
               valueFrom:
                 secretKeyRef:
