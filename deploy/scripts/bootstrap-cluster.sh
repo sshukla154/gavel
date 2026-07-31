@@ -32,6 +32,15 @@ kind create cluster --config "${REPO_ROOT}/k8s/kind/cluster-config.yaml"
 echo "==> Waiting for cluster to be ready"
 kubectl wait --for=condition=Ready node --all --timeout=120s
 
+echo "==> Installing ingress-nginx (kind-specific manifest)"
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+
+echo "==> Waiting for ingress-nginx controller to be ready"
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=120s
+
 echo "==> Installing ArgoCD ${ARGOCD_VERSION}"
 kubectl create namespace "${ARGOCD_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -n "${ARGOCD_NAMESPACE}" \
@@ -55,6 +64,9 @@ kubectl apply -f "${REPO_ROOT}/k8s/argocd/app-of-apps.yaml"
 echo ""
 echo "==> Bootstrap complete."
 echo ""
+echo "Add to hosts file (Windows: C:\Windows\System32\drivers\etc\hosts):"
+echo "  127.0.0.1 auction-service.local"
+echo ""
 echo "Get the ArgoCD admin password:"
 echo "  kubectl -n argocd get secret argocd-initial-admin-secret \\"
 echo "    -o jsonpath=\"{.data.password}\" | base64 -d"
@@ -62,5 +74,5 @@ echo ""
 echo "Port-forward the ArgoCD UI:"
 echo "  kubectl port-forward svc/argocd-server -n argocd 8080:443"
 echo ""
-echo "Port-forward auction-service:"
-echo "  kubectl port-forward svc/auction-service -n gavel 8081:8081"
+echo "Verify via ingress (after ArgoCD syncs):"
+echo "  curl http://auction-service.local/api/v1/ping"

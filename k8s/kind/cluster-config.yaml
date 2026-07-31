@@ -3,6 +3,23 @@ apiVersion: kind.x-k8s.io/v1alpha4
 name: gavel
 nodes:
   - role: control-plane
+    # Label the node so ingress-nginx's node selector matches.
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    # Map host ports so the ingress controller is reachable from the host.
+    # Add 127.0.0.1 auction-service.local to C:\Windows\System32\drivers\etc\hosts (Windows)
+    # or /etc/hosts (WSL/macOS) after bootstrapping the cluster.
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
     # Pre-pull the auction-service image into the kind node so ArgoCD doesn't
     # need to reach GHCR. Load after creating the cluster with:
     #   docker pull ghcr.io/sshukla154/gavel/auction-service:shukla

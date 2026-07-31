@@ -13,6 +13,13 @@ env:
   # "host.docker.internal" if enabled).
   OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4318
 
+ingress:
+  enabled: true
+  className: nginx
+  host: auction-service.local
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
 resources:
   requests:
     cpu: 50m

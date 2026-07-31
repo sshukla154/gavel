@@ -26,6 +26,16 @@ docs/
 # GitHub Actions workflow definitions
 .github/
 
+# Kubernetes / Helm / deploy scripts — not needed inside the image
+k8s/
+helm/
+deploy/
+
+# Env files
+.env
+.env.*
+*.env
+
 # Logs
 *.log
 *.log.*
