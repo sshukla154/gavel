@@ -115,6 +115,19 @@ services:
       retries: 15
       start_period: 40s
 
+  gavel-ui:
+    container_name: gavel-ui
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    networks:
+      - gavel-net
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
 networks:
   gavel-net:
     driver: bridge

@@ -13,8 +13,8 @@
 
 | Feature | Status | Checkpoint |
 |---|---|---|
-| Keycloak integration | ⏳ In progress | 1.1 |
-| Angular project skeleton | 📋 Planned | 1.2 |
+| Keycloak integration | ✅ Done | 1.1 |
+| Angular project skeleton | ✅ Done | 1.2 |
 | JWT propagation to services | 📋 Planned | 1.3 |
 
 ## Phase 2 — Auction core

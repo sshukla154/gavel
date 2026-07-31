@@ -1,0 +1,105 @@
+.ping-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, sans-serif;
+  background: #f5f5f5;
+}
+
+.ping-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: #1a1a2e;
+  color: #fff;
+
+  h1 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+}
+
+.ping-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.ping-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+  min-width: 300px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ping-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+
+  .label {
+    color: #666;
+    font-size: 0.875rem;
+  }
+
+  .value {
+    font-weight: 600;
+  }
+
+  .visits {
+    font-size: 1.5rem;
+    color: #1a1a2e;
+  }
+}
+
+.btn {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.btn-logout {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.btn-refresh {
+  background: #1a1a2e;
+  color: #fff;
+  align-self: flex-end;
+}
+
+.btn-retry {
+  background: #c0392b;
+  color: #fff;
+}
+
+.status-loading {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.status-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #c0392b;
+}

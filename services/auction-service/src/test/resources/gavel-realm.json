@@ -18,6 +18,21 @@
   ],
   "clients": [
     {
+      "clientId": "gavel-spa",
+      "name": "Gavel SPA",
+      "description": "Public PKCE client for the Angular SPA (authorization code flow).",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": true,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
       "clientId": "gavel-test-client",
       "name": "Gavel Test Client",
       "description": "Public client used for local testing and integration tests (ROPC flow).",

@@ -6,6 +6,18 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (1.2 — Angular 20 SPA skeleton)
+- Angular 20 project scaffolded in `ui/` — `@angular/build:application` (Vite), SCSS, standalone components
+- `keycloak-angular@20.1.0` + `keycloak-js@26` wired via `provideKeycloak()` with PKCE authorization code flow
+- `gavel-spa` Keycloak client added to `infra/keycloak/gavel-realm.json` (public, PKCE S256, redirects to `localhost:4200`)
+- `includeBearerTokenInterceptor` auto-attaches JWT to all `/api/*` requests
+- `authGuard` — `createAuthGuard<CanActivateFn>` redirects unauthenticated users to Keycloak login
+- `PingComponent` — calls `GET /api/v1/ping`, displays status, service name, total visits; logout button
+- Dev proxy (`proxy.conf.json`): `/api` → `http://localhost:8081`; nginx config for Docker serving
+- Multi-stage `ui/Dockerfile`: Node 24 build → `nginx:alpine` serve; `gavel-ui` service added to Docker Compose
+- `environment.ts` / `environment.prod.ts` — Keycloak connection config
+- ADR 0008: Angular 20 SPA with Keycloak OIDC
+
 ### Added (1.1 — Keycloak / OAuth2 resource server)
 - Keycloak 26 added to Docker Compose on host port 8180 with realm import from `infra/keycloak/gavel-realm.json`
 - `gavel-realm.json`: realm `gavel`, role `BIDDER`, users `bidder` (with role) and `guest` (without)

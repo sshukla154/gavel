@@ -1,0 +1,35 @@
+<div class="ping-container">
+  <header class="ping-header">
+    <h1>Gavel Auction Platform</h1>
+    <button class="btn btn-logout" (click)="logout()">
+      Logout ({{ username }})
+    </button>
+  </header>
+
+  <main class="ping-main">
+    @if (loading()) {
+      <p class="status-loading">Loading…</p>
+    } @else if (error()) {
+      <div class="status-error">
+        <p>{{ error() }}</p>
+        <button class="btn btn-retry" (click)="fetchPing()">Retry</button>
+      </div>
+    } @else if (ping()) {
+      <div class="ping-card">
+        <div class="ping-field">
+          <span class="label">Status</span>
+          <span class="value">{{ ping()!.data.status }}</span>
+        </div>
+        <div class="ping-field">
+          <span class="label">Service</span>
+          <span class="value">{{ ping()!.data.service }}</span>
+        </div>
+        <div class="ping-field">
+          <span class="label">Total visits</span>
+          <span class="value visits">{{ ping()!.data.totalVisits }}</span>
+        </div>
+        <button class="btn btn-refresh" (click)="fetchPing()">Refresh</button>
+      </div>
+    }
+  </main>
+</div>
