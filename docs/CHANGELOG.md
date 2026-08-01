@@ -6,6 +6,16 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (1.3 — JWT relay for service-to-service calls)
+- `bid-service` — new Spring Boot 4 module (port 8082): `GET /api/v1/bids` returns placeholder bids, JWT resource server with same Keycloak realm
+- `JwtRelayInterceptor` — `ClientHttpRequestInterceptor` that extracts `AbstractOAuth2TokenAuthenticationToken` from `SecurityContextHolder` and sets `Authorization: Bearer` on outbound requests
+- `BidClient` — `RestClient`-based HTTP client in auction-service wired with `JwtRelayInterceptor`; `GET /api/v1/bids` on auction-service relays to bid-service
+- `BidRelayIT` — end-to-end integration test: real Keycloak JWT + `MockWebServer` proves the token is relayed verbatim on the outbound call
+- `BidControllerTest` in both services — 401/403/200 paths covered with mock JWTs
+- `bid-service` added to Docker Compose (port 8082), multi-stage Dockerfile matching auction-service pattern
+- CI branch references updated `shukla` → `master` after branch rename
+- ADR 0009: JWT relay design and trade-offs
+
 ### Added (1.2 — Angular 20 SPA skeleton)
 - Angular 20 project scaffolded in `ui/` — `@angular/build:application` (Vite), SCSS, standalone components
 - `keycloak-angular@20.1.0` + `keycloak-js@26` wired via `provideKeycloak()` with PKCE authorization code flow

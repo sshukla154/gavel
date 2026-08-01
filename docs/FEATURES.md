@@ -15,7 +15,7 @@
 |---|---|---|
 | Keycloak integration | ✅ Done | 1.1 |
 | Angular project skeleton | ✅ Done | 1.2 |
-| JWT propagation to services | 📋 Planned | 1.3 |
+| JWT propagation to services | ✅ Done | 1.3 |
 
 ## Phase 2 — Auction core
 

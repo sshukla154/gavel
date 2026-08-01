@@ -115,6 +115,27 @@ services:
       retries: 15
       start_period: 40s
 
+  bid-service:
+    container_name: gavel-bid-service
+    build:
+      context: .
+      dockerfile: services/bid-service/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/gavel
+    networks:
+      - gavel-net
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   gavel-ui:
     container_name: gavel-ui
     build:

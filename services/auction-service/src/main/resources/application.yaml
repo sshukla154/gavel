@@ -25,6 +25,10 @@ spring:
           # (or via Helm values) to point at the correct Keycloak realm.
           jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/gavel}/protocol/openid-connect/certs
 
+bid:
+  service:
+    url: ${BID_SERVICE_URL:http://localhost:8082}
+
 server:
   port: 8081
   shutdown: graceful

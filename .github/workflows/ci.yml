@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [shukla, main]
+    branches: [master, main]
   pull_request:
-    branches: [shukla, main]
+    branches: [master, main]
 
 # packages:write — push image to GHCR.
 # contents:write — the update-helm-tag job commits the new SHA back to values.yaml.
@@ -75,21 +75,21 @@ jobs:
 
       # Derive image tags and OCI labels from git metadata.
       # Tags produced:
-      #   push to shukla  → ghcr.io/sshukla154/gavel/auction-service:shukla
-      #                   → ghcr.io/sshukla154/gavel/auction-service:sha-<short>
-      #                   → ghcr.io/sshukla154/gavel/auction-service:latest
-      #   pull request    → ghcr.io/sshukla154/gavel/auction-service:pr-<N>
-      #                   → ghcr.io/sshukla154/gavel/auction-service:sha-<short>
+      #   push to master  → ghcr.io/smaster154/gavel/auction-service:master
+      #                   → ghcr.io/smaster154/gavel/auction-service:sha-<short>
+      #                   → ghcr.io/smaster154/gavel/auction-service:latest
+      #   pull request    → ghcr.io/smaster154/gavel/auction-service:pr-<N>
+      #                   → ghcr.io/smaster154/gavel/auction-service:sha-<short>
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/sshukla154/gavel/auction-service
+          images: ghcr.io/smaster154/gavel/auction-service
           tags: |
             type=ref,event=branch
             type=ref,event=pr
             type=sha,format=short
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/shukla' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
       # Build the image using the repo-root Dockerfile.
       # cache-from/to: type=gha stores Docker layer cache in the GitHub Actions
@@ -132,7 +132,7 @@ jobs:
       - name: Run Trivy image scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ghcr.io/sshukla154/gavel/auction-service:sha-${{ steps.short-sha.outputs.value }}
+          image-ref: ghcr.io/smaster154/gavel/auction-service:sha-${{ steps.short-sha.outputs.value }}
           format: table
           exit-code: '1'
           ignore-unfixed: true
@@ -140,21 +140,21 @@ jobs:
           severity: HIGH,CRITICAL
 
   # ─── Job 4: GitOps — write the new image SHA back to Helm values ────────────
-  # Runs only on push to shukla (not on PRs, not on other branches).
+  # Runs only on push to master (not on PRs, not on other branches).
   # ArgoCD detects the values.yaml change and rolls out the new image automatically.
   # [skip ci] in the commit message stops this push from re-triggering the workflow.
   update-helm-tag:
     name: Update Helm image tag
     runs-on: ubuntu-latest
     needs: scan
-    if: github.event_name == 'push' && github.ref == 'refs/heads/shukla'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: shukla
+          ref: master
 
       - name: Update image tag in values.yaml
         run: |
