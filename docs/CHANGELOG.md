@@ -6,6 +6,15 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (2.1 — Auction service: create, list, close)
+- `Auction` JPA entity with UUID PK — `title`, `description`, `seller_id`, `status` (OPEN/CLOSED), `reserve_price_cents`, `current_price_cents`, `ends_at`, `created_at`
+- Flyway `V2__create_auctions_table.sql` — `auctions` table with check constraints and indexes on `status` and `seller_id`
+- `AuctionRepository` — `findByStatus(AuctionStatus)` finder
+- `AuctionService` — `createAuction`, `listOpenAuctions`, `getAuction`, `closeAuction`; only the seller can close their own auction (403 otherwise)
+- `AuctionController` — `POST /api/v1/auctions` (201), `GET /api/v1/auctions`, `GET /api/v1/auctions/{id}`, `POST /api/v1/auctions/{id}/close`; seller identity taken from JWT `sub` claim via `@AuthenticationPrincipal Jwt`
+- `AuctionControllerTest` — MockMvc, 401/403/200/201 paths, mocked `AuctionService`
+- `AuctionPersistenceIT` — Testcontainers PostgreSQL, full CRUD, forbidden-close, not-found paths
+
 ### Added (1.3 — JWT relay for service-to-service calls)
 - `bid-service` — new Spring Boot 4 module (port 8082): `GET /api/v1/bids` returns placeholder bids, JWT resource server with same Keycloak realm
 - `JwtRelayInterceptor` — `ClientHttpRequestInterceptor` that extracts `AbstractOAuth2TokenAuthenticationToken` from `SecurityContextHolder` and sets `Authorization: Bearer` on outbound requests

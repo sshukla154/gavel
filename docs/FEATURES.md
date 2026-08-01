@@ -21,7 +21,7 @@
 
 | Feature | Status | Checkpoint |
 |---|---|---|
-| Auction service (create, list, close) | 📋 Planned | 2.1 |
+| Auction service (create, list, close) | ✅ Done | 2.1 |
 | Bidding via Kafka events | 📋 Planned | 2.2 |
 | Real-time bid feed (WebSocket / SSE) | 📋 Planned | 2.3 |
 
