@@ -54,7 +54,7 @@ class BidCommandConsumerIT {
         final UUID auctionId = UUID.randomUUID();
         final UUID expectedBidderId = UUID.randomUUID();
         final PlaceBidCommand command = new PlaceBidCommand(
-                auctionId, expectedBidderId.toString(), 75_000L, Instant.now());
+                UUID.randomUUID(), auctionId, expectedBidderId.toString(), 75_000L, Instant.now());
 
         kafkaTemplate.send("auction.bids.commands", auctionId.toString(), command);
 
@@ -64,5 +64,27 @@ class BidCommandConsumerIT {
             assertThat(bids.get(0).getBidderId()).isEqualTo(expectedBidderId.toString());
             assertThat(bids.get(0).getAmountCents()).isEqualTo(75_000L);
         });
+    }
+
+    @Test
+    void redeliveredCommandDoesNotCreateDuplicateBid() {
+        final UUID auctionId = UUID.randomUUID();
+        final PlaceBidCommand duplicated = new PlaceBidCommand(
+                UUID.randomUUID(), auctionId, "bidder-redelivery", 80_000L, Instant.now());
+        // Same key → same partition → ordered: once the marker's row exists, both
+        // duplicate deliveries are guaranteed to have been consumed already.
+        final PlaceBidCommand marker = new PlaceBidCommand(
+                UUID.randomUUID(), auctionId, "bidder-marker", 90_000L, Instant.now());
+
+        kafkaTemplate.send("auction.bids.commands", auctionId.toString(), duplicated);
+        kafkaTemplate.send("auction.bids.commands", auctionId.toString(), duplicated);
+        kafkaTemplate.send("auction.bids.commands", auctionId.toString(), marker);
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat(bidRepository.findByAuctionId(auctionId))
+                        .extracting("bidderId")
+                        .contains("bidder-marker"));
+
+        assertThat(bidRepository.findByAuctionId(auctionId)).hasSize(2);
     }
 }

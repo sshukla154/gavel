@@ -6,6 +6,25 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (2.2 hardening — pipeline correctness)
+- `PlaceBidCommand.commandId` (UUID, generated in `AuctionService.placeBid`) — idempotency key for Kafka redelivery
+- Flyway `V2__add_command_id_to_bids.sql` in bid-service — `command_id` column with unique constraint
+- `Auction.updateCurrentPrice` monotonic guard — rejects non-increasing prices and updates on non-OPEN auctions; redelivered/out-of-order events can no longer lower an established price
+- `BidCommandConsumer` restructured: no longer `@Transactional` — bid insert commits before the event publishes (dual-write fix); redelivery reuses the existing row via `findByCommandId` and retries the publish
+- `KafkaTopicsConfiguration` in both services — `NewTopic` beans (3 partitions) replace reliance on broker auto-topic-creation
+- `EventSerdeTest` — millisecond-fast round-trip guard for both wire records including `Instant` fields
+- `AuctionPriceGuardTest` — unit coverage for the monotonic price rules
+- `BidCommandConsumerIT.redeliveredCommandDoesNotCreateDuplicateBid` — proves redelivery idempotency end to end
+- CI docker + Trivy jobs converted to a service matrix — bid-service image now built, pushed to GHCR, and scanned alongside auction-service
+- ADR 0010 — Kafka command/event pipeline decision record (topics, keying, Jackson 3 serde, idempotency, dual-write handling)
+
+### Fixed (2.2 hardening)
+- Kafka serde switched from the Jackson 2 `JsonSerializer`/`JsonDeserializer` to Jackson 3 `JacksonJsonSerializer`/`JacksonJsonDeserializer` in all four `application.yaml` files — the Jackson 2 path could not serialize `Instant` (no `jackson-datatype-jsr310` on the classpath), which broke the production publish path in both services
+- `maven-failsafe-plugin` goals bound in the root POM — bid-service integration tests were silently never executed in CI
+- Test-resource `application.yaml` shadowing removed — renamed to `application-test.yaml` with `@ActiveProfiles("test")` on all test classes, so the main configuration loads in tests and the profile file carries only genuine overrides
+- `BidPlacedEventConsumerIT` rewritten to publish through the application's own `KafkaTemplate` (correct serde and type headers by construction)
+- `AuctionBiddingIT` correction: uses Testcontainers Postgres with a mocked `BidCommandPublisher` (not Kafka end-to-end, as previously recorded here)
+
 ### Added (2.2 — Bidding via Kafka events)
 - `PlaceBidCommand` and `BidPlacedEvent` records in `gavel-common` event package — shared between services
 - `BidCommandPublisher` in auction-service — publishes to `auction.bids.commands` topic keyed by auction ID

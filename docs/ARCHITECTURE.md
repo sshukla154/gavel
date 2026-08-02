@@ -1,8 +1,21 @@
 # Architecture
 
-## Current state
+## Current state (checkpoint 2.2)
 
-`auction-service` is the only running service. It serves `GET /api/v1/ping`, persists a `Visit` record per call to PostgreSQL via Flyway-managed schema, and emits traces/metrics/logs via the OpenTelemetry SDK to the local collector stack.
+Two Spring Boot services plus an Angular SPA. `auction-service` (port 8081) owns the auction lifecycle and current price; `bid-service` (port 8082) owns the bid ledger. Both are OAuth2 resource servers against the shared Keycloak realm (`gavel`), with JWT relay on service-to-service calls (ADR 0009). Bidding is asynchronous over Kafka (ADR 0010). `auction-service` additionally emits traces/metrics/logs via the OpenTelemetry SDK to the local collector stack.
+
+## Bidding flow (Kafka)
+
+```
+  POST /api/v1/auctions/{id}/bids  (202 Accepted)
+        │
+        ▼
+  auction-service ──PlaceBidCommand──▶ auction.bids.commands ──▶ bid-service
+        ▲                                                            │ persists Bid
+        └───updates current price◀── auction.bids.events ◀──────────┘ (BidPlacedEvent)
+```
+
+Both topics are keyed by `auctionId` (per-auction ordering) and declared as `NewTopic` beans by their producing service. Delivery is at-least-once: `PlaceBidCommand.commandId` plus a unique constraint on `bids.command_id` dedupes redelivery, and `Auction.updateCurrentPrice` is monotonic so stale events cannot lower a price. Wire format is JSON via spring-kafka's Jackson 3 serde. See ADR 0010 for the full decision record.
 
 ## Target system
 
@@ -32,30 +45,40 @@
 
 ## Services
 
-| Service | Package | Phase | Responsibility |
-|---|---|---|---|
-| auction-service | `com.shukla.gavel.auction` | 0+ | Auction lifecycle, bid events, visit tracking |
-| identity-service | `com.shukla.gavel.identity` | 1 | Auth via Keycloak integration |
-| notification-service | `com.shukla.gavel.notification` | 3 | Email / push on bid events |
+| Service | Package | Phase | Status | Responsibility |
+|---|---|---|---|---|
+| auction-service | `com.shukla.gavel.auction` | 0+ | Running | Auction lifecycle, current price, bid command origin, visit tracking |
+| bid-service | `com.shukla.gavel.bid` | 1.3+ | Running | Bid ledger: consumes commands, persists bids, emits `BidPlacedEvent` |
+| notification-service | `com.shukla.gavel.notification` | 3 | Planned | Email / push on bid events |
+
+Identity is provided by Keycloak directly (ADR 0007) — there is no separate identity-service module.
 
 ## Module structure
 
 ```
 gavel/
 ├── pom.xml                  # parent POM (aggregator + dep management)
-├── common/                  # gavel-common: shared DTOs, ApiResponse, ProblemDetails
+├── common/                  # gavel-common: shared DTOs, event records, ApiResponse, ProblemDetails
+├── ui/                      # Angular SPA (Keycloak login, port 4200)
 ├── infra/                   # Docker Compose infrastructure configs
+│   ├── keycloak/            # realm import (gavel realm)
+│   ├── postgres/            # init.sql — creates bids_db
 │   ├── otel-collector/
 │   ├── prometheus/
 │   ├── grafana/
 │   ├── tempo/
 │   └── loki/
-└── services/
-    └── auction-service/     # one folder per service
-        └── src/main/java/com/shukla/gavel/auction/
-            ├── api/         # controllers and response DTOs
-            ├── domain/      # entities, repositories, services
-            └── infrastructure/  # framework-specific config
+└── services/                # one folder per service, same package layout in each
+    ├── auction-service/
+    │   └── src/main/java/com/shukla/gavel/auction/
+    │       ├── api/         # controllers and response DTOs
+    │       ├── domain/      # entities, repositories, services
+    │       └── infrastructure/  # Kafka publishers/consumers, security, topics
+    └── bid-service/
+        └── src/main/java/com/shukla/gavel/bid/
+            ├── api/
+            ├── domain/
+            └── infrastructure/
 ```
 
 ## API conventions

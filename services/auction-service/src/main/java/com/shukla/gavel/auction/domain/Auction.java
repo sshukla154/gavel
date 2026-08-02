@@ -69,8 +69,19 @@ public class Auction {
         this.status = AuctionStatus.CLOSED;
     }
 
-    public void updateCurrentPrice(final long newPriceCents) {
+    /**
+     * Raises the current price. Rejects the update when the auction is not open or the
+     * new price is not strictly higher — Kafka redelivery and out-of-order events must
+     * never lower an already-established price.
+     *
+     * @return true when the price was raised, false when the update was rejected
+     */
+    public boolean updateCurrentPrice(final long newPriceCents) {
+        if (this.status != AuctionStatus.OPEN || newPriceCents <= this.currentPriceCents) {
+            return false;
+        }
         this.currentPriceCents = newPriceCents;
+        return true;
     }
 
     public UUID getId() { return id; }

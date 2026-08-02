@@ -50,11 +50,19 @@ jobs:
             **/target/failsafe-reports/
           retention-days: 7
 
-  # ─── Job 2: Docker build and GHCR push ─────────────────────────────────────
+  # ─── Job 2: Docker build and GHCR push (one matrix leg per service) ─────────
   docker:
-    name: Docker build & push
+    name: Docker build & push (${{ matrix.service }})
     runs-on: ubuntu-latest
     needs: build-and-test   # never publish an image from a failed build
+
+    strategy:
+      matrix:
+        include:
+          - service: auction-service
+            dockerfile: ./Dockerfile
+          - service: bid-service
+            dockerfile: ./services/bid-service/Dockerfile
 
     steps:
       - name: Checkout
@@ -74,17 +82,17 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Derive image tags and OCI labels from git metadata.
-      # Tags produced:
-      #   push to master  → ghcr.io/sshukla154/gavel/auction-service:master
-      #                   → ghcr.io/sshukla154/gavel/auction-service:sha-<short>
-      #                   → ghcr.io/sshukla154/gavel/auction-service:latest
-      #   pull request    → ghcr.io/sshukla154/gavel/auction-service:pr-<N>
-      #                   → ghcr.io/sshukla154/gavel/auction-service:sha-<short>
+      # Tags produced (per service):
+      #   push to master  → ghcr.io/sshukla154/gavel/<service>:master
+      #                   → ghcr.io/sshukla154/gavel/<service>:sha-<short>
+      #                   → ghcr.io/sshukla154/gavel/<service>:latest
+      #   pull request    → ghcr.io/sshukla154/gavel/<service>:pr-<N>
+      #                   → ghcr.io/sshukla154/gavel/<service>:sha-<short>
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/sshukla154/gavel/auction-service
+          images: ghcr.io/sshukla154/gavel/${{ matrix.service }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -100,22 +108,26 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   # ─── Job 3: Trivy — scan the pushed image for HIGH/CRITICAL CVEs ────────────
   # Runs only on push events (image must exist in GHCR before it can be scanned).
   # The job fails if any HIGH or CRITICAL vulnerability is found — the GitOps
   # tag-update job will not run, preventing a vulnerable image from being deployed.
   scan:
-    name: Trivy vulnerability scan
+    name: Trivy vulnerability scan (${{ matrix.service }})
     runs-on: ubuntu-latest
     needs: docker
     if: github.event_name != 'pull_request'
+
+    strategy:
+      matrix:
+        service: [auction-service, bid-service]
 
     steps:
       - name: Log in to GHCR
@@ -132,7 +144,7 @@ jobs:
       - name: Run Trivy image scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/sshukla154/gavel/auction-service:sha-${{ steps.short-sha.outputs.value }}
+          image-ref: ghcr.io/sshukla154/gavel/${{ matrix.service }}:sha-${{ steps.short-sha.outputs.value }}
           format: table
           exit-code: '1'
           ignore-unfixed: true
@@ -140,6 +152,7 @@ jobs:
           severity: HIGH,CRITICAL
 
   # ─── Job 4: GitOps — write the new image SHA back to Helm values ────────────
+  # auction-service only: bid-service has no Helm chart yet (tracked as Phase 2 debt).
   # Runs only on push to master (not on PRs, not on other branches).
   # ArgoCD detects the values.yaml change and rolls out the new image automatically.
   # [skip ci] in the commit message stops this push from re-triggering the workflow.

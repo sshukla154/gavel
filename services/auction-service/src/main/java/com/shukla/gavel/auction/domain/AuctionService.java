@@ -74,7 +74,7 @@ public class AuctionService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Auction is not open: " + auctionId);
         }
         final PlaceBidCommand command = new PlaceBidCommand(
-                auctionId, bidderId, request.amountCents(), Instant.now());
+                UUID.randomUUID(), auctionId, bidderId, request.amountCents(), Instant.now());
         bidCommandPublisher.publish(command);
         log.debug("PlaceBidCommand published: auctionId={} bidder={} amount={}",
                 auctionId, bidderId, request.amountCents());
@@ -84,8 +84,12 @@ public class AuctionService {
     @Transactional
     public void updateCurrentPrice(final UUID auctionId, final long amountCents) {
         auctionRepository.findById(auctionId).ifPresent(auction -> {
-            auction.updateCurrentPrice(amountCents);
-            log.debug("Current price updated: auctionId={} amount={}", auctionId, amountCents);
+            if (auction.updateCurrentPrice(amountCents)) {
+                log.debug("Current price updated: auctionId={} amount={}", auctionId, amountCents);
+            } else {
+                log.debug("Price update rejected (stale or non-increasing): auctionId={} amount={} current={}",
+                        auctionId, amountCents, auction.getCurrentPriceCents());
+            }
         });
     }
 

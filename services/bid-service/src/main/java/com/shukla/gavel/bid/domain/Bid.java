@@ -18,6 +18,11 @@ public class Bid {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    // Idempotency key carried on PlaceBidCommand; unique so a redelivered command
+    // cannot insert a second row.
+    @Column(name = "command_id", nullable = false, unique = true)
+    private UUID commandId;
+
     @Column(name = "auction_id", nullable = false)
     private UUID auctionId;
 
@@ -33,7 +38,9 @@ public class Bid {
     protected Bid() {
     }
 
-    public Bid(final UUID auctionId, final String bidderId, final long amountCents, final Instant placedAt) {
+    public Bid(final UUID commandId, final UUID auctionId, final String bidderId,
+               final long amountCents, final Instant placedAt) {
+        this.commandId = commandId;
         this.auctionId = auctionId;
         this.bidderId = bidderId;
         this.amountCents = amountCents;
@@ -41,6 +48,7 @@ public class Bid {
     }
 
     public UUID getId() { return id; }
+    public UUID getCommandId() { return commandId; }
     public UUID getAuctionId() { return auctionId; }
     public String getBidderId() { return bidderId; }
     public long getAmountCents() { return amountCents; }
