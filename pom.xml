@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.6</version>
+        <version>4.0.7</version>
         <relativePath/>
     </parent>
 
@@ -27,6 +27,8 @@
     <properties>
         <java.version>21</java.version>
         <testcontainers.version>1.21.0</testcontainers.version>
+        <!-- Override postgresql JDBC beyond Spring Boot BOM to fix CVE-2026-54291 -->
+        <postgresql.version>42.7.13</postgresql.version>
     </properties>
 
     <build>
