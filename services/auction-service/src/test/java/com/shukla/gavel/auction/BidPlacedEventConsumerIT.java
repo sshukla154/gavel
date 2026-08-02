@@ -1,5 +1,7 @@
 package com.shukla.gavel.auction;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.shukla.gavel.auction.domain.Auction;
 import com.shukla.gavel.auction.domain.AuctionRepository;
 import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
@@ -22,7 +24,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -67,12 +68,11 @@ class BidPlacedEventConsumerIT {
         final BidPlacedEvent event = new BidPlacedEvent(
                 UUID.randomUUID(), auctionId, "bidder-1", bidAmountCents, Instant.now());
 
-        final Map<String, Object> producerProps = new HashMap<>();
-        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        final Map<String, Object> producerProps = Map.of(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         final DefaultKafkaProducerFactory<String, BidPlacedEvent> factory =
-                new DefaultKafkaProducerFactory<>(producerProps);
+                new DefaultKafkaProducerFactory<>(producerProps, new StringSerializer(), new JsonSerializer<>(mapper));
         final KafkaTemplate<String, BidPlacedEvent> producer = new KafkaTemplate<>(factory);
         try {
             producer.send("auction.bids.events", auctionId.toString(), event).get(5, TimeUnit.SECONDS);
