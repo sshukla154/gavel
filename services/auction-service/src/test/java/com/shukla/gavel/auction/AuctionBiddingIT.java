@@ -30,7 +30,8 @@ class AuctionBiddingIT {
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Container
-    static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.9.0"));
+    static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.9.0"))
+            .withKraft();
 
     @DynamicPropertySource
     static void infrastructure(final DynamicPropertyRegistry registry) {
