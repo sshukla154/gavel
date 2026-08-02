@@ -1,3 +1,4 @@
+# Test-profile overrides only — the main application.yaml still loads underneath.
 spring:
   security:
     oauth2:
@@ -5,6 +6,5 @@ spring:
         jwt:
           jwk-set-uri: http://localhost:9999/mock-jwks
   kafka:
-    bootstrap-servers: localhost:9092
     listener:
       auto-startup: false

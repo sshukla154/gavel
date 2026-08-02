@@ -1,0 +1,13 @@
+# Test-profile overrides only — the main application.yaml still loads underneath.
+# jwk-set-uri: lets the Spring Security context start without a real Keycloak
+# (KeycloakAuthIT overrides via @DynamicPropertySource).
+# listener.auto-startup false: Kafka listeners stay off unless a test re-enables them.
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9999/mock-jwks
+  kafka:
+    listener:
+      auto-startup: false

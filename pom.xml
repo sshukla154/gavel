@@ -44,6 +44,23 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <!-- Bind failsafe in every module: spring-boot-starter-parent configures the
+                 plugin but does not bind its goals, so *IT classes silently never run
+                 unless each module binds it itself. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencyManagement>

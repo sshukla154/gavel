@@ -6,6 +6,7 @@ import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -22,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link Visit} entities can be persisted and counted against a real PostgreSQL
  * database.
  */
+@ActiveProfiles("test")
 @SpringBootTest
 @Testcontainers
 class VisitPersistenceIT {

@@ -1,21 +1,17 @@
 package com.shukla.gavel.auction;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shukla.gavel.auction.domain.Auction;
 import com.shukla.gavel.auction.domain.AuctionRepository;
-import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
 import com.shukla.gavel.common.event.BidPlacedEvent;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.serializer.JsonSerializer;
+import org.springframework.kafka.listener.MessageListenerContainer;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -23,13 +19,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+@ActiveProfiles("test")
 @SpringBootTest
 @Testcontainers
 class BidPlacedEventConsumerIT {
@@ -50,40 +46,38 @@ class BidPlacedEventConsumerIT {
         registry.add("spring.kafka.listener.auto-startup", () -> "true");
     }
 
-    @MockitoBean
-    BidCommandPublisher bidCommandPublisher;
-
+    // The application's own producer: same serializer and type headers as bid-service uses.
     @Autowired
-    ObjectMapper objectMapper;
+    KafkaTemplate<Object, Object> kafkaTemplate;
 
     @Autowired
     AuctionRepository auctionRepository;
 
+    @Autowired
+    KafkaListenerEndpointRegistry listenerRegistry;
+
     @Test
-    void bidPlacedEventUpdatesAuctionCurrentPrice() throws Exception {
-        final long reservePriceCents = 100_000L;
+    void bidPlacedEventUpdatesAuctionCurrentPrice() {
         final long bidAmountCents = 120_000L;
         final Auction auction = auctionRepository.save(
-                new Auction("Test Auction", null, "seller-1", reservePriceCents, Instant.now().plusSeconds(3600)));
+                new Auction("Test Auction", null, "seller-1", 100_000L, Instant.now().plusSeconds(3600)));
         final UUID auctionId = auction.getId();
 
-        final BidPlacedEvent event = new BidPlacedEvent(
-                UUID.randomUUID(), auctionId, "bidder-1", bidAmountCents, Instant.now());
+        awaitListenersRunning();
 
-        final Map<String, Object> producerProps = Map.of(
-                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        final DefaultKafkaProducerFactory<String, BidPlacedEvent> factory =
-                new DefaultKafkaProducerFactory<>(producerProps, new StringSerializer(), new JsonSerializer<>(objectMapper));
-        final KafkaTemplate<String, BidPlacedEvent> producer = new KafkaTemplate<>(factory);
-        try {
-            producer.send("auction.bids.events", auctionId.toString(), event).get(5, TimeUnit.SECONDS);
-        } finally {
-            factory.destroy();
-        }
+        kafkaTemplate.send("auction.bids.events", auctionId.toString(),
+                new BidPlacedEvent(UUID.randomUUID(), auctionId, "bidder-1", bidAmountCents, Instant.now()));
 
         await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
             final Auction updated = auctionRepository.findById(auctionId).orElseThrow();
             assertThat(updated.getCurrentPriceCents()).isEqualTo(bidAmountCents);
         });
+    }
+
+    private void awaitListenersRunning() {
+        await().atMost(30, TimeUnit.SECONDS).until(() ->
+                !listenerRegistry.getListenerContainers().isEmpty()
+                        && listenerRegistry.getListenerContainers().stream()
+                                .allMatch(MessageListenerContainer::isRunning));
     }
 }
