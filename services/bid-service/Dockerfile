@@ -5,6 +5,7 @@ FROM maven:3.9-eclipse-temurin-21 AS deps
 WORKDIR /build
 COPY pom.xml .
 COPY common/pom.xml common/
+COPY services/auction-service/pom.xml services/auction-service/
 COPY services/bid-service/pom.xml services/bid-service/
 COPY common/src common/src
 RUN mvn -B -N install && \
