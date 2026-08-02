@@ -1,7 +1,6 @@
 package com.shukla.gavel.auction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.shukla.gavel.auction.domain.Auction;
 import com.shukla.gavel.auction.domain.AuctionRepository;
 import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
@@ -55,6 +54,9 @@ class BidPlacedEventConsumerIT {
     BidCommandPublisher bidCommandPublisher;
 
     @Autowired
+    ObjectMapper objectMapper;
+
+    @Autowired
     AuctionRepository auctionRepository;
 
     @Test
@@ -68,11 +70,10 @@ class BidPlacedEventConsumerIT {
         final BidPlacedEvent event = new BidPlacedEvent(
                 UUID.randomUUID(), auctionId, "bidder-1", bidAmountCents, Instant.now());
 
-        final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         final Map<String, Object> producerProps = Map.of(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         final DefaultKafkaProducerFactory<String, BidPlacedEvent> factory =
-                new DefaultKafkaProducerFactory<>(producerProps, new StringSerializer(), new JsonSerializer<>(mapper));
+                new DefaultKafkaProducerFactory<>(producerProps, new StringSerializer(), new JsonSerializer<>(objectMapper));
         final KafkaTemplate<String, BidPlacedEvent> producer = new KafkaTemplate<>(factory);
         try {
             producer.send("auction.bids.events", auctionId.toString(), event).get(5, TimeUnit.SECONDS);
