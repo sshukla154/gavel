@@ -130,7 +130,7 @@ jobs:
         run: echo "value=$(echo '${{ github.sha }}' | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
       - name: Run Trivy image scan
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/sshukla154/gavel/auction-service:sha-${{ steps.short-sha.outputs.value }}
           format: table
