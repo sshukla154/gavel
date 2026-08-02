@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
   keycloak: {
-    url: 'http://localhost:8180',
+    url: 'https://auth.YOUR_DOMAIN/realms/gavel',
     realm: 'gavel',
     clientId: 'gavel-spa'
   }
