@@ -11,3 +11,8 @@ spring:
   kafka:
     listener:
       auto-startup: false
+    # No topic creation at context startup: most tests have no broker, and the
+    # KafkaAdmin retry loop against localhost:9092 floods the logs otherwise.
+    # Kafka ITs rely on the Testcontainers broker's auto-topic-creation.
+    admin:
+      auto-create: false
