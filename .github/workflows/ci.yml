@@ -75,16 +75,16 @@ jobs:
 
       # Derive image tags and OCI labels from git metadata.
       # Tags produced:
-      #   push to master  → ghcr.io/smaster154/gavel/auction-service:master
-      #                   → ghcr.io/smaster154/gavel/auction-service:sha-<short>
-      #                   → ghcr.io/smaster154/gavel/auction-service:latest
-      #   pull request    → ghcr.io/smaster154/gavel/auction-service:pr-<N>
-      #                   → ghcr.io/smaster154/gavel/auction-service:sha-<short>
+      #   push to master  → ghcr.io/sshukla154/gavel/auction-service:master
+      #                   → ghcr.io/sshukla154/gavel/auction-service:sha-<short>
+      #                   → ghcr.io/sshukla154/gavel/auction-service:latest
+      #   pull request    → ghcr.io/sshukla154/gavel/auction-service:pr-<N>
+      #                   → ghcr.io/sshukla154/gavel/auction-service:sha-<short>
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/smaster154/gavel/auction-service
+          images: ghcr.io/sshukla154/gavel/auction-service
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -132,7 +132,7 @@ jobs:
       - name: Run Trivy image scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ghcr.io/smaster154/gavel/auction-service:sha-${{ steps.short-sha.outputs.value }}
+          image-ref: ghcr.io/sshukla154/gavel/auction-service:sha-${{ steps.short-sha.outputs.value }}
           format: table
           exit-code: '1'
           ignore-unfixed: true
