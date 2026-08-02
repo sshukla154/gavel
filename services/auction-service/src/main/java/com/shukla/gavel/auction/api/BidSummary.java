@@ -1,3 +1,5 @@
 package com.shukla.gavel.auction.api;
 
-public record BidSummary(String auctionId, String bidderId, long amountCents, String status) {}
+import java.time.Instant;
+
+public record BidSummary(String id, String auctionId, String bidderId, long amountCents, Instant placedAt) {}

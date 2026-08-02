@@ -1,8 +1,10 @@
 package com.shukla.gavel.auction;
 
 import com.shukla.gavel.auction.api.AuctionResponse;
+import com.shukla.gavel.auction.api.PlaceBidResponse;
 import com.shukla.gavel.auction.domain.AuctionService;
 import com.shukla.gavel.auction.domain.AuctionStatus;
+import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -50,13 +53,18 @@ class AuctionControllerTest {
     @MockitoBean
     AuctionService auctionService;
 
+    @MockitoBean
+    BidCommandPublisher bidCommandPublisher;
+
     @Autowired
     WebApplicationContext context;
 
     MockMvc mockMvc;
 
+    static final UUID AUCTION_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
     static final AuctionResponse SAMPLE = new AuctionResponse(
-            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            AUCTION_ID,
             "Vintage Watch",
             "A rare 1960s timepiece",
             "seller-sub-001",
@@ -134,6 +142,19 @@ class AuctionControllerTest {
                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_BIDDER"))))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.data.status").value("CLOSED"));
+    }
+
+    @Test
+    void placeBidReturnsAccepted() throws Exception {
+        final PlaceBidResponse bidResponse = new PlaceBidResponse(AUCTION_ID, "bidder-sub", 60_000L);
+        given(auctionService.placeBid(any(), anyString(), any())).willReturn(bidResponse);
+
+        mockMvc.perform(post("/api/v1/auctions/" + AUCTION_ID + "/bids")
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content("{\"amountCents\":60000}")
+                       .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_BIDDER"))))
+               .andExpect(status().isAccepted())
+               .andExpect(jsonPath("$.data.amountCents").value(60000));
     }
 
     @Test

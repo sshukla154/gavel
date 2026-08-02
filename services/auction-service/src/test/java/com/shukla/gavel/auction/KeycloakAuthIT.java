@@ -1,5 +1,6 @@
 package com.shukla.gavel.auction;
 
+import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
@@ -39,6 +41,9 @@ class KeycloakAuthIT {
         registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
                 () -> keycloak.getAuthServerUrl() + "/realms/gavel/protocol/openid-connect/certs");
     }
+
+    @MockitoBean
+    BidCommandPublisher bidCommandPublisher;
 
     @LocalServerPort
     int port;

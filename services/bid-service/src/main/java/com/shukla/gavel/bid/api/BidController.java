@@ -1,5 +1,6 @@
 package com.shukla.gavel.bid.api;
 
+import com.shukla.gavel.bid.domain.BidRepository;
 import com.shukla.gavel.common.api.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,12 +14,23 @@ import java.util.List;
 @RequestMapping("/api/v1")
 public class BidController {
 
+    private final BidRepository bidRepository;
+
+    public BidController(final BidRepository bidRepository) {
+        this.bidRepository = bidRepository;
+    }
+
     @GetMapping("/bids")
     public ApiResponse<List<BidSummary>> bids() {
         log.debug("bids called");
-        return ApiResponse.of(List.of(
-                new BidSummary("auction-001", "bidder-1", 10000L, "PENDING"),
-                new BidSummary("auction-002", "bidder-2", 25000L, "ACCEPTED")
-        ));
+        final List<BidSummary> bids = bidRepository.findAll().stream()
+                .map(bid -> new BidSummary(
+                        bid.getId().toString(),
+                        bid.getAuctionId().toString(),
+                        bid.getBidderId(),
+                        bid.getAmountCents(),
+                        bid.getPlacedAt()))
+                .toList();
+        return ApiResponse.of(bids);
     }
 }

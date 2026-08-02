@@ -50,4 +50,13 @@ public class AuctionController {
             @AuthenticationPrincipal final Jwt jwt) {
         return ApiResponse.of(auctionService.closeAuction(id, jwt.getSubject()));
     }
+
+    @PostMapping("/{id}/bids")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ApiResponse<PlaceBidResponse> placeBid(
+            @PathVariable final UUID id,
+            @RequestBody final PlaceBidRequest request,
+            @AuthenticationPrincipal final Jwt jwt) {
+        return ApiResponse.of(auctionService.placeBid(id, jwt.getSubject(), request));
+    }
 }

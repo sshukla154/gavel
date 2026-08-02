@@ -6,6 +6,24 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (2.2 — Bidding via Kafka events)
+- `PlaceBidCommand` and `BidPlacedEvent` records in `gavel-common` event package — shared between services
+- `BidCommandPublisher` in auction-service — publishes to `auction.bids.commands` topic keyed by auction ID
+- `BidPlacedEventConsumer` in auction-service — consumes `auction.bids.events`, calls `AuctionService.updateCurrentPrice()`
+- `AuctionService.placeBid()` — validates auction is OPEN, publishes `PlaceBidCommand`, returns 202 Accepted
+- `AuctionService.updateCurrentPrice()` — updates `current_price_cents` when a bid is confirmed
+- `POST /api/v1/auctions/{id}/bids` endpoint (202 Accepted) — fires bid command asynchronously via Kafka
+- `Bid` JPA entity + `BidRepository` in bid-service with `findByAuctionId()` finder
+- Flyway `V1__create_bids_table.sql` in bid-service — `bids` table with UUID PK and amount check constraint
+- `BidCommandConsumer` in bid-service — persists bid to DB then publishes `BidPlacedEvent`
+- `BidEventPublisher` in bid-service — publishes to `auction.bids.events` topic keyed by auction ID
+- `BidController` in bid-service — now serves real DB data via `BidRepository.findAll()`
+- `BidSummary` updated in both services — `id`, `auctionId`, `bidderId`, `amountCents`, `placedAt` (removed `status`)
+- `AuctionBiddingIT` — Testcontainers Kafka + Postgres, end-to-end bid placement returns 202
+- `BidCommandConsumerIT` — Testcontainers Kafka + Postgres, command → bid persisted in DB
+- Kafka added to Docker Compose (Bitnami KRaft mode, port 9092); `infra/postgres/init.sql` mounted to create `bids_db`
+- Kafka config wired in `application.yaml` for both services; test overrides disable listener auto-startup
+
 ### Added (2.1 — Auction service: create, list, close)
 - `Auction` JPA entity with UUID PK — `title`, `description`, `seller_id`, `status` (OPEN/CLOSED), `reserve_price_cents`, `current_price_cents`, `ends_at`, `created_at`
 - Flyway `V2__create_auctions_table.sql` — `auctions` table with check constraints and indexes on `status` and `seller_id`

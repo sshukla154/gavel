@@ -2,6 +2,7 @@ package com.shukla.gavel.auction;
 
 import com.shukla.gavel.auction.api.BidSummary;
 import com.shukla.gavel.auction.infrastructure.BidClient;
+import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -43,6 +46,9 @@ class BidControllerTest {
     @MockitoBean
     BidClient bidClient;
 
+    @MockitoBean
+    BidCommandPublisher bidCommandPublisher;
+
     @Autowired
     WebApplicationContext context;
 
@@ -51,7 +57,12 @@ class BidControllerTest {
     @BeforeEach
     void setUp() {
         given(bidClient.fetchBids()).willReturn(List.of(
-                new BidSummary("auction-001", "bidder-1", 10000L, "PENDING")
+                new BidSummary(
+                        UUID.randomUUID().toString(),
+                        "00000000-0000-0000-0000-000000000001",
+                        "bidder-1",
+                        10000L,
+                        Instant.parse("2026-01-01T00:00:00Z"))
         ));
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
                                  .apply(springSecurity())
@@ -63,7 +74,7 @@ class BidControllerTest {
         mockMvc.perform(get("/api/v1/bids")
                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_BIDDER"))))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.data[0].auctionId").value("auction-001"))
+               .andExpect(jsonPath("$.data[0].auctionId").value("00000000-0000-0000-0000-000000000001"))
                .andExpect(jsonPath("$.data[0].amountCents").value(10000));
     }
 

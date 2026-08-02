@@ -4,12 +4,14 @@ import com.shukla.gavel.auction.api.AuctionResponse;
 import com.shukla.gavel.auction.api.CreateAuctionRequest;
 import com.shukla.gavel.auction.domain.AuctionService;
 import com.shukla.gavel.auction.domain.AuctionStatus;
+import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.server.ResponseStatusException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -34,6 +36,9 @@ class AuctionPersistenceIT {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
     }
+
+    @MockitoBean
+    BidCommandPublisher bidCommandPublisher;
 
     @Autowired
     AuctionService auctionService;
