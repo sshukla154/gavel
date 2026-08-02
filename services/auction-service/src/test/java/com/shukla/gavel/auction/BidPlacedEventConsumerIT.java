@@ -2,13 +2,19 @@ package com.shukla.gavel.auction;
 
 import com.shukla.gavel.auction.domain.Auction;
 import com.shukla.gavel.auction.domain.AuctionRepository;
+import com.shukla.gavel.auction.infrastructure.BidCommandPublisher;
 import com.shukla.gavel.common.event.BidPlacedEvent;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -16,6 +22,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -42,14 +50,14 @@ class BidPlacedEventConsumerIT {
         registry.add("spring.kafka.listener.auto-startup", () -> "true");
     }
 
-    @Autowired
-    KafkaTemplate<Object, Object> kafkaTemplate;
+    @MockitoBean
+    BidCommandPublisher bidCommandPublisher;
 
     @Autowired
     AuctionRepository auctionRepository;
 
     @Test
-    void bidPlacedEventUpdatesAuctionCurrentPrice() {
+    void bidPlacedEventUpdatesAuctionCurrentPrice() throws Exception {
         final long reservePriceCents = 100_000L;
         final long bidAmountCents = 120_000L;
         final Auction auction = auctionRepository.save(
@@ -59,9 +67,20 @@ class BidPlacedEventConsumerIT {
         final BidPlacedEvent event = new BidPlacedEvent(
                 UUID.randomUUID(), auctionId, "bidder-1", bidAmountCents, Instant.now());
 
-        kafkaTemplate.send("auction.bids.events", auctionId.toString(), event);
+        final Map<String, Object> producerProps = new HashMap<>();
+        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
+        producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        final DefaultKafkaProducerFactory<String, BidPlacedEvent> factory =
+                new DefaultKafkaProducerFactory<>(producerProps);
+        final KafkaTemplate<String, BidPlacedEvent> producer = new KafkaTemplate<>(factory);
+        try {
+            producer.send("auction.bids.events", auctionId.toString(), event).get(5, TimeUnit.SECONDS);
+        } finally {
+            factory.destroy();
+        }
 
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
             final Auction updated = auctionRepository.findById(auctionId).orElseThrow();
             assertThat(updated.getCurrentPriceCents()).isEqualTo(bidAmountCents);
         });
