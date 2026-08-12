@@ -1,0 +1,136 @@
+<div class="auction-page">
+  <header class="page-header">
+    <div class="header-left">
+      <a routerLink="/auctions" class="back-link">← All auctions</a>
+      <h1>{{ auction()?.title ?? 'Auction' }}</h1>
+    </div>
+    <div class="header-right">
+      @if (watchers() !== null) {
+        <span class="watchers-badge">{{ watchers() }} watching</span>
+      }
+      <span
+        class="stream-badge"
+        [class.live]="streamStatus() === 'open'"
+        [class.reconnecting]="streamStatus() === 'reconnecting'"
+      >
+        @switch (streamStatus()) {
+          @case ('open') { Live }
+          @case ('connecting') { Connecting… }
+          @case ('reconnecting') { Reconnecting… }
+          @default { Offline }
+        }
+      </span>
+    </div>
+  </header>
+
+  <main class="page-main">
+    @if (loading()) {
+      <p class="status-loading">Loading…</p>
+    } @else if (loadError()) {
+      <div class="status-error">
+        <p>{{ loadError() }}</p>
+        <button class="btn btn-retry" (click)="retry()">Retry</button>
+      </div>
+    } @else if (auction(); as a) {
+      @if (isClosed()) {
+        <div class="closed-banner">This auction is closed. Bidding has ended.</div>
+      }
+
+      <section class="panel live-panel">
+        <div class="price-block">
+          <span class="label">Current price</span>
+          <span class="live-price" [class.flash]="priceFlash()">
+            {{ displayPriceCents() / 100 | currency: 'EUR' }}
+          </span>
+        </div>
+        <div class="meta-block">
+          <div class="meta-item">
+            <span class="label">Ends in</span>
+            <app-countdown [endsAt]="a.endsAt" />
+          </div>
+          <div class="meta-item">
+            <span class="label">Reserve</span>
+            <span>{{ a.reservePriceCents / 100 | currency: 'EUR' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">Status</span>
+            <span class="status-chip" [class.closed]="isClosed()">{{ a.status }}</span>
+          </div>
+        </div>
+        @if (a.description) {
+          <p class="description">{{ a.description }}</p>
+        }
+        @if (canClose()) {
+          <div class="close-row">
+            <button class="btn btn-danger" (click)="closeAuction()" [disabled]="closing()">
+              {{ closing() ? 'Closing…' : 'Close auction' }}
+            </button>
+            @if (closeError()) {
+              <p class="inline-error">{{ closeError() }}</p>
+            }
+          </div>
+        }
+      </section>
+
+      @if (!isClosed()) {
+        <section class="panel bid-form-panel">
+          <h2>Place a bid</h2>
+          <form (ngSubmit)="submitBid()">
+            <div class="bid-row">
+              <label for="bid-amount">Amount (EUR)</label>
+              <input
+                id="bid-amount"
+                name="amount"
+                type="number"
+                step="0.01"
+                [min]="minBidEuros()"
+                [placeholder]="'min ' + minBidEuros().toFixed(2)"
+                [ngModel]="bidAmountEuros()"
+                (ngModelChange)="bidAmountEuros.set($event)"
+                [disabled]="bidState() === 'submitting'"
+              />
+              <button type="submit" class="btn btn-primary" [disabled]="bidState() === 'submitting'">
+                {{ bidState() === 'submitting' ? 'Submitting…' : 'Place bid' }}
+              </button>
+            </div>
+          </form>
+          @if (bidError()) {
+            <p class="inline-error">{{ bidError() }}</p>
+          }
+          @switch (bidState()) {
+            @case ('awaiting') {
+              <p class="bid-status awaiting">Bid submitted — awaiting confirmation…</p>
+            }
+            @case ('confirmed') {
+              <p class="bid-status confirmed">Bid confirmed.</p>
+            }
+            @case ('unconfirmed') {
+              <p class="bid-status unconfirmed">
+                Bid not confirmed yet — it may have been outbid or rejected.
+              </p>
+            }
+          }
+        </section>
+      }
+
+      <section class="panel bid-history-panel">
+        <h2>Bid history</h2>
+        @if (bids().length === 0) {
+          <p class="empty">No bids yet.</p>
+        } @else {
+          <ul class="bid-list">
+            @for (bid of bids(); track bid.id) {
+              <li class="bid-item" [class.mine]="bid.bidderId === myUserId">
+                <span class="bid-amount">{{ bid.amountCents / 100 | currency: 'EUR' }}</span>
+                <span class="bid-bidder">
+                  {{ bid.bidderId === myUserId ? 'You' : bid.bidderId.slice(0, 8) }}
+                </span>
+                <span class="bid-time">{{ bid.placedAt | date: 'HH:mm:ss' }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  </main>
+</div>

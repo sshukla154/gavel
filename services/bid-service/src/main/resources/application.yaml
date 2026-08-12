@@ -27,10 +27,13 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      # ErrorHandlingDeserializer: a malformed payload becomes a handled error routed to
+      # the DLT instead of an infinite deserialization crash-loop on the partition.
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       auto-offset-reset: earliest
       group-id: bid-service
       properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
         spring.json.trusted.packages: "com.shukla.gavel.common.event"
 
 server:

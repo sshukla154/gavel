@@ -1,0 +1,305 @@
+.auction-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, sans-serif;
+  background: #f5f5f5;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background: #1a1a2e;
+  color: #fff;
+
+  h1 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.back-link {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 0.875rem;
+  white-space: nowrap;
+
+  &:hover {
+    color: #fff;
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stream-badge {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+
+  &.live {
+    background: #27ae60;
+    color: #fff;
+  }
+
+  &.reconnecting {
+    background: #e67e22;
+    color: #fff;
+  }
+}
+
+.watchers-badge {
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+}
+
+.page-main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    color: #1a1a2e;
+  }
+}
+
+.closed-banner {
+  background: #fdf3e7;
+  border: 1px solid #e67e22;
+  color: #9a5b13;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+}
+
+.label {
+  color: #666;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.live-price {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  font-variant-numeric: tabular-nums;
+
+  &.flash {
+    animation: price-flash 0.7s ease-out;
+  }
+}
+
+@keyframes price-flash {
+  0% {
+    color: #27ae60;
+    transform: scale(1.05);
+  }
+  100% {
+    color: #1a1a2e;
+    transform: scale(1);
+  }
+}
+
+.meta-block {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 600;
+}
+
+.status-chip {
+  background: #eaf7ef;
+  color: #1e8449;
+  border-radius: 4px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  align-self: flex-start;
+
+  &.closed {
+    background: #eee;
+    color: #888;
+  }
+}
+
+.description {
+  margin: 1rem 0 0;
+  color: #555;
+}
+
+.close-row {
+  margin-top: 1.25rem;
+}
+
+.bid-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  label {
+    color: #666;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+}
+
+.bid-status {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+
+  &.awaiting {
+    color: #e67e22;
+  }
+
+  &.confirmed {
+    color: #1e8449;
+  }
+
+  &.unconfirmed {
+    color: #c0392b;
+  }
+}
+
+.bid-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.bid-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+
+  &.mine {
+    background: #f2fbf5;
+  }
+
+  .bid-amount {
+    font-weight: 700;
+    color: #1a1a2e;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bid-bidder {
+    color: #666;
+    flex: 1;
+  }
+
+  .bid-time {
+    color: #999;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.btn {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.85;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.btn-primary {
+  background: #27ae60;
+  color: #fff;
+}
+
+.btn-danger {
+  background: #c0392b;
+  color: #fff;
+}
+
+.btn-retry {
+  background: #c0392b;
+  color: #fff;
+}
+
+.inline-error {
+  margin: 0.75rem 0 0;
+  color: #c0392b;
+  font-size: 0.875rem;
+}
+
+.status-loading,
+.empty {
+  color: #666;
+}
+
+.status-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #c0392b;
+}

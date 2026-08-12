@@ -1,0 +1,54 @@
+<div class="auction-page">
+  <header class="page-header">
+    <div class="header-left">
+      <a routerLink="/auctions" class="back-link">← All auctions</a>
+      <h1>Create auction</h1>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <form class="panel create-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <label class="field">
+        <span class="field-label">Title *</span>
+        <input type="text" formControlName="title" />
+        @if (form.controls.title.touched && form.controls.title.hasError('required')) {
+          <span class="field-error">Title is required.</span>
+        }
+        @if (form.controls.title.hasError('maxlength')) {
+          <span class="field-error">Title must be at most 255 characters.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field-label">Description</span>
+        <textarea rows="3" formControlName="description"></textarea>
+      </label>
+
+      <label class="field">
+        <span class="field-label">Reserve price (EUR) *</span>
+        <input type="number" min="0" step="0.01" formControlName="reservePriceEuros" />
+        @if (form.controls.reservePriceEuros.touched && form.controls.reservePriceEuros.invalid) {
+          <span class="field-error">Enter a reserve price of at least €0.00.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field-label">Ends at *</span>
+        <input type="datetime-local" [min]="minEndsAt" formControlName="endsAt" />
+        @if (form.controls.endsAt.touched && form.controls.endsAt.hasError('required')) {
+          <span class="field-error">End time is required.</span>
+        }
+      </label>
+
+      @if (error()) {
+        <p class="inline-error">{{ error() }}</p>
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+          {{ submitting() ? 'Creating…' : 'Create auction' }}
+        </button>
+      </div>
+    </form>
+  </main>
+</div>

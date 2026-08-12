@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class BidClient {
@@ -26,6 +27,16 @@ public class BidClient {
     public List<BidSummary> fetchBids() {
         return restClient.get()
                 .uri("/api/v1/bids")
+                .retrieve()
+                .body(new ParameterizedTypeReference<ApiResponse<List<BidSummary>>>() {})
+                .data();
+    }
+
+    public List<BidSummary> fetchBidsForAuction(final UUID auctionId) {
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/v1/bids")
+                        .queryParam("auctionId", auctionId)
+                        .build())
                 .retrieve()
                 .body(new ParameterizedTypeReference<ApiResponse<List<BidSummary>>>() {})
                 .data();

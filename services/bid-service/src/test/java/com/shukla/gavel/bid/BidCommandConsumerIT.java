@@ -2,11 +2,14 @@ package com.shukla.gavel.bid;
 
 import com.shukla.gavel.bid.domain.BidRepository;
 import com.shukla.gavel.common.event.PlaceBidCommand;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.KafkaContainer;
@@ -16,6 +19,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -63,6 +67,37 @@ class BidCommandConsumerIT {
             assertThat(bids).hasSize(1);
             assertThat(bids.get(0).getBidderId()).isEqualTo(expectedBidderId.toString());
             assertThat(bids.get(0).getAmountCents()).isEqualTo(75_000L);
+        });
+    }
+
+    @Test
+    void poisonMessageDoesNotBlockThePartition() {
+        final UUID auctionId = UUID.randomUUID();
+
+        // Raw string producer: bypasses the JSON serializer to plant a payload the
+        // consumer cannot deserialize. Same key → same partition as the valid command.
+        final DefaultKafkaProducerFactory<String, String> rawFactory =
+                new DefaultKafkaProducerFactory<>(
+                        Map.of(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers()),
+                        new StringSerializer(), new StringSerializer());
+        try {
+            final KafkaTemplate<String, String> rawProducer = new KafkaTemplate<>(rawFactory);
+            rawProducer.send("auction.bids.commands", auctionId.toString(), "this is not json{{{");
+            rawProducer.flush();
+        } finally {
+            rawFactory.destroy();
+        }
+
+        final PlaceBidCommand validCommand = new PlaceBidCommand(
+                UUID.randomUUID(), auctionId, "bidder-after-poison", 85_000L, Instant.now());
+        kafkaTemplate.send("auction.bids.commands", auctionId.toString(), validCommand);
+
+        // The valid command lands behind the poison message on the same partition; it can
+        // only be consumed if the error handler dead-letters the poison record.
+        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
+            final var bids = bidRepository.findByAuctionId(auctionId);
+            assertThat(bids).hasSize(1);
+            assertThat(bids.get(0).getBidderId()).isEqualTo("bidder-after-poison");
         });
     }
 

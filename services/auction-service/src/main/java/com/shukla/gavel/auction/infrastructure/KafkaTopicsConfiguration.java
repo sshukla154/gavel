@@ -19,4 +19,16 @@ public class KafkaTopicsConfiguration {
                 .replicas(1)
                 .build();
     }
+
+    /**
+     * Dead-letter topic for the events this service consumes. Same partition count as
+     * the source so the recoverer's same-partition routing holds.
+     */
+    @Bean
+    public NewTopic auctionBidsEventsDeadLetterTopic() {
+        return TopicBuilder.name("auction.bids.events.DLT")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }

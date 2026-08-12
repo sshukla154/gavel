@@ -6,6 +6,17 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (2.3 — Live auction room)
+- `GET /api/v1/auctions/{id}/stream` — SSE live bid feed (auction-service): snapshot on every (re)connect (current price, watcher count, recent bids), then live `bid` events; `watchers` and `heartbeat` events; per-auction connection cap (429 beyond 200 watchers)
+- `BidStreamBroadcaster` — per-instance SSE emitter registry with heartbeat eviction of dead connections
+- `BidStreamEventListener` — broadcast Kafka consumer (`auction-service-stream-${random.uuid}` groupId, `latest` offset) fanning `BidPlacedEvent` out to connected browsers; every instance sees every event, no sticky sessions
+- `GET /api/v1/auctions/{id}/bids` (auction-service) → relays to bid-service `GET /api/v1/bids?auctionId=` (new filter, newest-first, top 50) via the ADR 0009 JWT relay
+- Angular auction UI (`ui/src/app/features/auctions/`): auction list with countdowns, create-auction form, and the live auction room — flashing price ticks, "N watching" badge, live bid history, 202 accepted-then-confirmed bid flow, seller close button; SSE consumed via `fetch()` streaming with the Keycloak bearer token (native `EventSource` cannot send headers), auto-reconnect with backoff
+- Kafka poison-pill protection in both services: `ErrorHandlingDeserializer` wrapping the Jackson 3 deserializer + `DefaultErrorHandler` with exponential backoff (3 retries) and `DeadLetterPublishingRecoverer`; DLT topics `auction.bids.commands.DLT` / `auction.bids.events.DLT` declared with matching partitions
+- `BidCommandConsumerIT.poisonMessageDoesNotBlockThePartition` — proves a malformed message dead-letters instead of stalling the partition
+- `BidStreamBroadcasterTest`, `BidStreamControllerTest` — snapshot-on-connect, watcher counting, dead-emitter eviction, degraded mode when bid-service is down
+- ADR 0011 — SSE over WebSocket/gRPC for the one-way feed; broadcast consumer groups; snapshot-instead-of-replay; per-instance presence limitation
+
 ### Added (2.2 hardening — pipeline correctness)
 - `PlaceBidCommand.commandId` (UUID, generated in `AuctionService.placeBid`) — idempotency key for Kafka redelivery
 - Flyway `V2__add_command_id_to_bids.sql` in bid-service — `command_id` column with unique constraint

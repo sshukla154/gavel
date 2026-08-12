@@ -1,0 +1,45 @@
+<div class="auction-page">
+  <header class="page-header">
+    <h1>Gavel Auctions</h1>
+    <div class="header-actions">
+      <a routerLink="/auctions/new" class="btn btn-primary">Create auction</a>
+      <button class="btn btn-logout" (click)="logout()">Logout ({{ username }})</button>
+    </div>
+  </header>
+
+  <main class="page-main">
+    @if (loading()) {
+      <p class="status-loading">Loading…</p>
+    } @else if (error()) {
+      <div class="status-error">
+        <p>{{ error() }}</p>
+        <button class="btn btn-retry" (click)="fetchAuctions()">Retry</button>
+      </div>
+    } @else if (auctions().length === 0) {
+      <p class="empty">No auctions yet. Create the first one.</p>
+    } @else {
+      <ul class="auction-list">
+        @for (auction of auctions(); track auction.id) {
+          <li>
+            <a class="auction-card" [routerLink]="['/auctions', auction.id]">
+              <div class="card-main">
+                <h2>{{ auction.title }}</h2>
+                @if (auction.description) {
+                  <p class="description">{{ auction.description }}</p>
+                }
+              </div>
+              <div class="card-side">
+                <span class="price">{{ auction.currentPriceCents / 100 | currency: 'EUR' }}</span>
+                @if (auction.status === 'OPEN') {
+                  <app-countdown [endsAt]="auction.endsAt" />
+                } @else {
+                  <span class="status-chip closed">Closed</span>
+                }
+              </div>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  </main>
+</div>

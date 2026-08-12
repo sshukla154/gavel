@@ -1,5 +1,7 @@
 package com.shukla.gavel.bid;
 
+import com.shukla.gavel.bid.domain.Bid;
+import com.shukla.gavel.bid.domain.BidRepository;
 import com.shukla.gavel.bid.infrastructure.BidEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,9 @@ import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.time.Instant;
+import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -48,10 +53,14 @@ class BidControllerTest {
     @Autowired
     WebApplicationContext context;
 
+    @Autowired
+    BidRepository bidRepository;
+
     MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
+        bidRepository.deleteAll();
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
                                  .apply(springSecurity())
                                  .build();
@@ -64,6 +73,27 @@ class BidControllerTest {
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.data").isArray())
                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void bidsFilteredByAuctionIdReturnsNewestFirst() throws Exception {
+        final UUID auctionId = UUID.randomUUID();
+        final UUID otherAuctionId = UUID.randomUUID();
+        bidRepository.save(new Bid(UUID.randomUUID(), auctionId, "bidder-1", 10_000L,
+                Instant.parse("2026-01-01T10:00:00Z")));
+        bidRepository.save(new Bid(UUID.randomUUID(), auctionId, "bidder-2", 12_000L,
+                Instant.parse("2026-01-01T11:00:00Z")));
+        bidRepository.save(new Bid(UUID.randomUUID(), otherAuctionId, "bidder-3", 99_000L,
+                Instant.parse("2026-01-01T12:00:00Z")));
+
+        mockMvc.perform(get("/api/v1/bids")
+                       .param("auctionId", auctionId.toString())
+                       .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_BIDDER"))))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.data.length()").value(2))
+               .andExpect(jsonPath("$.data[0].bidderId").value("bidder-2"))
+               .andExpect(jsonPath("$.data[0].amountCents").value(12000))
+               .andExpect(jsonPath("$.data[1].bidderId").value("bidder-1"));
     }
 
     @Test
