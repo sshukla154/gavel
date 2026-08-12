@@ -1,8 +1,8 @@
 # Architecture
 
-## Current state (checkpoint 2.2)
+## Current state (Phase 2.2)
 
-Two Spring Boot services plus an Angular SPA. `auction-service` (port 8081) owns the auction lifecycle and current price; `bid-service` (port 8082) owns the bid ledger. Both are OAuth2 resource servers against the shared Keycloak realm (`gavel`), with JWT relay on service-to-service calls (ADR 0009). Bidding is asynchronous over Kafka (ADR 0010). `auction-service` additionally emits traces/metrics/logs via the OpenTelemetry SDK to the local collector stack.
+Two running Spring Boot services plus an Angular SPA. `auction-service` (port 8081) owns the auction lifecycle and current price; `bid-service` (port 8082) owns the bid ledger and consumes bid commands from Kafka. Both are OAuth2 resource servers against the shared Keycloak realm (`gavel`), with JWT relay on service-to-service calls (ADR 0009). Bidding is fully asynchronous over Kafka with idempotent consumers and monotonic price guards (ADR 0010). `auction-service` emits traces/metrics/logs via the OpenTelemetry SDK to the collector stack; `bid-service` has no OTel wiring yet (no SDK dependency, no OTLP/Prometheus config) — it is not scraped or traced.
 
 ## Bidding flow (Kafka)
 
@@ -47,9 +47,10 @@ Both topics are keyed by `auctionId` (per-auction ordering) and declared as `New
 
 | Service | Package | Phase | Status | Responsibility |
 |---|---|---|---|---|
-| auction-service | `com.shukla.gavel.auction` | 0+ | Running | Auction lifecycle, current price, bid command origin, visit tracking |
-| bid-service | `com.shukla.gavel.bid` | 1.3+ | Running | Bid ledger: consumes commands, persists bids, emits `BidPlacedEvent` |
+| auction-service | `com.shukla.gavel.auction` | 0+ | Running (8081) | Auction lifecycle, current price, bid command origin, visit tracking, publishes `PlaceBidCommand` |
+| bid-service | `com.shukla.gavel.bid` | 2.1+ | Running (8082) | Bid ledger: consumes `PlaceBidCommand`, persists bids, publishes `BidPlacedEvent` back to auction-service |
 | notification-service | `com.shukla.gavel.notification` | 3 | Planned | Email / push on bid events |
+| UI (Angular SPA) | `src/app/` | 1.2+ | Running (4200) | Browser-based client; authenticates via Keycloak, displays auctions and bid feeds |
 
 Identity is provided by Keycloak directly (ADR 0007) — there is no separate identity-service module.
 

@@ -12,7 +12,7 @@ set -euo pipefail
 CLUSTER_NAME="gavel"
 ARGOCD_NAMESPACE="argocd"
 ARGOCD_VERSION="v2.13.3"
-IMAGE_TAG="shukla"
+IMAGE_TAG="master"
 IMAGE_REF="ghcr.io/sshukla154/gavel/auction-service:${IMAGE_TAG}"
 SKIP_IMAGE_LOAD=false
 

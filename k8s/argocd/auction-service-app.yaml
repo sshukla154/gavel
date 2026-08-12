@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/sshukla154/gavel.git
-    targetRevision: shukla
+    targetRevision: master
     path: helm/auction-service
     helm:
       valueFiles:

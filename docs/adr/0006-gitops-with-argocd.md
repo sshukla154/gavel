@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-05-20
 - **Deciders:** Seemant
+- **Updated:** 2026-08-12 — repo branch renamed `shukla` → `master` (Phase 1.3); references below updated to match
 
 ## Context
 
@@ -12,7 +13,7 @@ The project needs a deployment mechanism that makes Kubernetes cluster state aud
 
 Use **ArgoCD** as the GitOps operator. The repo itself is the source of truth. The deployment model:
 
-- ArgoCD watches `helm/auction-service/` on the `shukla` branch.
+- ArgoCD watches `helm/auction-service/` on the `master` branch.
 - `values-local.yaml` overrides are applied for the kind cluster (branch tag, reduced resources, host OTel endpoint).
 - `automated.prune: true` removes Kubernetes resources deleted from Git. `selfHeal: true` reverts manual `kubectl` changes.
 - The **app-of-apps** pattern (`k8s/argocd/app-of-apps.yaml`) bootstraps all ArgoCD `Application` resources from a single root application, so a fresh cluster needs only one `kubectl apply`.
@@ -30,7 +31,7 @@ The GitOps loop: CI commits a new image SHA to `helm/auction-service/values.yaml
 **Harder:**
 - ArgoCD itself must be bootstrapped before it can manage other apps — chicken-and-egg for a fresh cluster. Solved by `bootstrap-cluster.ps1` / `.sh` which installs ArgoCD first, then applies the app-of-apps manifest.
 - Secrets in Git are a security concern. Mitigated for Phase 0 by keeping only non-sensitive defaults in `values.yaml` and using Kubernetes Secrets (base64, not encrypted). Phase 3 will introduce Sealed Secrets or External Secrets Operator.
-- The `[skip ci]` GitOps tag-update commit requires careful branch protection configuration — force-push must remain allowed for `github-actions[bot]` on the `shukla` branch.
+- The `[skip ci]` GitOps tag-update commit requires careful branch protection configuration — force-push must remain allowed for `github-actions[bot]` on the `master` branch.
 
 ## Alternatives considered
 

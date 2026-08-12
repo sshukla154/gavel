@@ -192,22 +192,28 @@ Started AuctionApplication in X.XXX seconds
 
 ### Verify
 
-```bash
-# Ping endpoint — expect {"data":{"status":"ok","service":"auction-service",...}}
-curl http://localhost:8081/api/v1/ping
+Keycloak is now part of the stack (added Phase 1.1): `/api/v1/ping` and every other `/api/**` route require a valid JWT with the `BIDDER` role, and `/actuator/**` other than `/actuator/health/**` requires an authenticated (any-role) JWT. Plain unauthenticated curl no longer succeeds against those endpoints.
 
-# Overall health — expect {"status":"UP"}
+```bash
+# Ping endpoint without a token now returns 401 — this is expected
+curl -i http://localhost:8081/api/v1/ping
+
+# Overall health — public, expect {"status":"UP"}
 curl http://localhost:8081/actuator/health
 
-# Liveness probe — expect {"status":"UP"}
+# Liveness probe — public, expect {"status":"UP"}
 curl http://localhost:8081/actuator/health/liveness
 
-# Readiness probe — expect {"status":"UP"}
+# Readiness probe — public, expect {"status":"UP"}
 curl http://localhost:8081/actuator/health/readiness
 
-# Prometheus metrics — expect lines like jvm_memory_used_bytes{...}
+# Prometheus metrics — requires an authenticated JWT too (401 without one);
+# see infra/prometheus/prometheus.yaml, which currently scrapes this endpoint
+# unauthenticated and will itself get 401 (tracked as a known gap, not a doc issue)
 curl http://localhost:8081/actuator/prometheus | head -20
 ```
+
+To exercise `/api/v1/ping` with a real token, get one from Keycloak's `bidder` user (realm `gavel`, client `gavel-spa`) or simply drive it through the Angular UI at `localhost:4200`, which attaches the JWT automatically. See DEVELOPMENT.md.
 
 Verify the database is being written to:
 
@@ -261,14 +267,18 @@ docker run --rm \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://gavel-postgres:5432/hello_db \
   -e SPRING_DATASOURCE_USERNAME=postgres \
   -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e KEYCLOAK_ISSUER_URI=http://gavel-keycloak:8080/realms/gavel \
+  -e KAFKA_BOOTSTRAP_SERVERS=gavel-kafka:9092 \
   -e OTEL_EXPORTER_OTLP_ENDPOINT=http://gavel-otel-collector:4318 \
   -e SPRING_PROFILES_ACTIVE=local \
   -p 8081:8081 \
   ghcr.io/sshukla154/gavel/auction-service:local
 ```
 
-The service joins the `gavel_gavel-net` Docker network so it can reach `gavel-postgres` and
-`gavel-otel-collector` by container name.
+The service joins the `gavel_gavel-net` Docker network so it can reach `gavel-postgres`,
+`gavel-keycloak`, `gavel-kafka`, and `gavel-otel-collector` by container name. `KEYCLOAK_ISSUER_URI`
+and `KAFKA_BOOTSTRAP_SERVERS` default to `localhost` addresses inside `application.yaml` — inside
+a container on `gavel_gavel-net` those defaults don't resolve, so both must be overridden as shown.
 
 ### Verify
 
@@ -374,12 +384,12 @@ it without pulling from GHCR:
 ```bash
 # Option A — use the already-built local image from Mode 2
 docker tag ghcr.io/sshukla154/gavel/auction-service:local \
-           ghcr.io/sshukla154/gavel/auction-service:shukla
-kind load docker-image ghcr.io/sshukla154/gavel/auction-service:shukla --name gavel
+           ghcr.io/sshukla154/gavel/auction-service:master
+kind load docker-image ghcr.io/sshukla154/gavel/auction-service:master --name gavel
 
 # Option B — pull the published branch image
-docker pull ghcr.io/sshukla154/gavel/auction-service:shukla
-kind load docker-image ghcr.io/sshukla154/gavel/auction-service:shukla --name gavel
+docker pull ghcr.io/sshukla154/gavel/auction-service:master
+kind load docker-image ghcr.io/sshukla154/gavel/auction-service:master --name gavel
 ```
 
 ### 3.3 Deploy via ArgoCD
@@ -439,8 +449,11 @@ kubectl logs -l app.kubernetes.io/name=auction-service -n gavel --tail=50
 ```bash
 kubectl port-forward svc/auction-service -n gavel 8081:8081 &
 
-curl http://localhost:8081/api/v1/ping
-# {"data":{"status":"ok","service":"auction-service","totalVisits":1},"timestamp":"..."}
+curl -i http://localhost:8081/api/v1/ping
+# 401 Unauthorized without a Keycloak JWT — expected since Phase 1.1 (see Mode 1's Verify section above).
+# Keycloak is not deployed into the kind cluster (Phase 2 debt), so there is currently no
+# in-cluster way to obtain a token for this endpoint; the liveness/readiness probes below
+# remain the practical smoke test for Mode 3.
 
 curl http://localhost:8081/actuator/health/liveness
 # {"status":"UP"}
@@ -549,7 +562,11 @@ Open [http://localhost:9090/targets](http://localhost:9090/targets).
 | Service | Mode | Host port | Notes |
 |---|---|---|---|
 | auction-service | 1, 2 | 8081 | HTTP, actuator, metrics |
-| PostgreSQL | 1, 2 | 5432 | `hello_db`, user: postgres |
+| PostgreSQL | 1, 2 | 5432 | `hello_db` (auction-service) + `bids_db` (bid-service), user: postgres |
+| Kafka | 1, 2 | 9092 | Bid command/event bus (not deployed to Mode 3 — Phase 2 debt) |
+| Keycloak | 1, 2 | 8180 | OAuth2/OIDC, realm `gavel` (not deployed to Mode 3 — Phase 2 debt) |
+| bid-service | 1, 2 | 8082 | Bid ledger API (not deployed to Mode 3 — Phase 2 debt) |
+| UI (nginx) | 1, 2 | 4200 | Angular SPA (not deployed to Mode 3 — Phase 2 debt) |
 | OTel Collector | 1, 2 | 4317 | OTLP gRPC |
 | OTel Collector | 1, 2 | 4318 | OTLP HTTP |
 | OTel Collector | 1, 2 | 8889 | Prometheus scrape endpoint |
@@ -567,9 +584,9 @@ Open [http://localhost:9090/targets](http://localhost:9090/targets).
 ### Mode 1 — Local JVM
 
 ```bash
-docker compose up -d                                              # start infra
+docker compose up -d                                              # start infra (postgres, kafka, keycloak, bid-service, ui, observability)
 mvn -pl services/auction-service -am spring-boot:run             # start service
-curl http://localhost:8081/api/v1/ping                           # verify
+curl http://localhost:8081/actuator/health                       # verify (unauthenticated); /api/v1/ping now needs a Keycloak JWT
 docker compose down                                              # stop infra
 ```
 
@@ -583,9 +600,11 @@ docker run --rm --name auction-service \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://gavel-postgres:5432/hello_db \
   -e SPRING_DATASOURCE_USERNAME=postgres \
   -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e KEYCLOAK_ISSUER_URI=http://gavel-keycloak:8080/realms/gavel \
+  -e KAFKA_BOOTSTRAP_SERVERS=gavel-kafka:9092 \
   -p 8081:8081 \
   ghcr.io/sshukla154/gavel/auction-service:local                 # start service
-curl http://localhost:8081/api/v1/ping                           # verify
+curl http://localhost:8081/actuator/health                       # verify (unauthenticated)
 docker stop auction-service && docker compose down               # stop all
 ```
 
@@ -595,11 +614,11 @@ docker stop auction-service && docker compose down               # stop all
 kind create cluster --config k8s/kind/cluster-config.yaml                          # create cluster
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml  # install argocd
 kubectl wait --for=condition=ready pod --all -n argocd --timeout=180s              # wait for argocd
-kind load docker-image ghcr.io/sshukla154/gavel/auction-service:shukla --name gavel  # load image
+kind load docker-image ghcr.io/sshukla154/gavel/auction-service:master --name gavel  # load image
 kubectl apply -f k8s/argocd/postgres-app.yaml                                      # deploy postgres
 kubectl apply -f k8s/argocd/auction-service-app.yaml                               # deploy service
 kubectl port-forward svc/auction-service -n gavel 8081:8081 &                      # expose
-curl http://localhost:8081/api/v1/ping                                             # verify
+curl http://localhost:8081/actuator/health/liveness                                # verify (no Keycloak in-cluster yet)
 kind delete cluster --name gavel                                                   # destroy
 ```
 

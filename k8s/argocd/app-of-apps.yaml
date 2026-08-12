@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/sshukla154/gavel.git
-    targetRevision: shukla
+    targetRevision: master
     # ArgoCD will apply every *.yaml file in this directory as a raw manifest.
     # Adding a new service means adding a new *-app.yaml here and committing.
     path: k8s/argocd

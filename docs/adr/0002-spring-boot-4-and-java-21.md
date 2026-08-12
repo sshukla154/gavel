@@ -1,8 +1,9 @@
-# 0002 — Spring Boot 4.0.6 and Java 21
+# 0002 — Spring Boot 4.0.7 and Java 21
 
 - **Status:** Accepted
 - **Date:** 2026-05-15
 - **Deciders:** Seemant
+- **Updated:** 2026-08-04 — Spring Boot upgraded to 4.0.7 to resolve CVEs in PostgreSQL JDBC
 
 ## Context
 
@@ -10,7 +11,7 @@ Choosing a Java and Spring Boot version to pin for the entire project. The choic
 
 ## Decision
 
-Pin to **Java 21** (LTS) and **Spring Boot 4.0.6** (latest GA on the 4.0.x line as of 2026-05-15). Enable virtual threads via `spring.threads.virtual.enabled: true` from day one.
+Pin to **Java 21** (LTS) and **Spring Boot 4.0.7** (latest GA on the 4.0.x line). Enable virtual threads via `spring.threads.virtual.enabled: true` from day one.
 
 ## Consequences
 

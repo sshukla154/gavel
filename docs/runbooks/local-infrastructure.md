@@ -6,12 +6,18 @@ Operations guide for the Docker Compose stack used in local development.
 
 | Container name | Image | Port(s) | Purpose |
 |---|---|---|---|
-| gavel-postgres | postgres:16-alpine | 5432 | Primary database |
-| gavel-otel-collector | otel/opentelemetry-collector-contrib:0.127.0 | 4317, 4318, 8889 | Telemetry ingestion |
+| gavel-postgres | postgres:16-alpine | 5432 | Primary database (`hello_db` + `bids_db`) |
+| gavel-kafka | bitnami/kafka:3.9 | 9092 | Bid command/event bus (KRaft, auto-create topics) |
+| gavel-keycloak | quay.io/keycloak/keycloak:26.2 | 8180 (→8080) | OAuth2/OIDC identity provider, realm `gavel` |
+| gavel-bid-service | built from `services/bid-service/Dockerfile` | 8082 | Bid ledger service |
+| gavel-ui | built from `ui/Dockerfile` | 4200 (→80) | Angular SPA served via nginx |
+| gavel-otel-collector | otel/opentelemetry-collector-contrib:0.127.0 | 4317, 4318, 8889 | Telemetry ingestion (auction-service only — bid-service has no OTel wiring) |
 | gavel-prometheus | prom/prometheus:v3.4.0 | 9090 | Metrics storage |
 | gavel-grafana | grafana/grafana:12.0.0 | 3000 | Dashboards |
 | gavel-tempo | grafana/tempo:2.7.2 | 3200 | Trace storage |
 | gavel-loki | grafana/loki:3.4.2 | 3100 | Log aggregation |
+
+`auction-service` itself is not a Compose service — it runs on the host via `mvn spring-boot:run` against this infrastructure (see DEVELOPMENT.md).
 
 ## Start and stop
 

@@ -22,5 +22,5 @@ nodes:
         protocol: TCP
     # Pre-pull the auction-service image into the kind node so ArgoCD doesn't
     # need to reach GHCR. Load after creating the cluster with:
-    #   docker pull ghcr.io/sshukla154/gavel/auction-service:shukla
-    #   kind load docker-image ghcr.io/sshukla154/gavel/auction-service:shukla --name gavel
+    #   docker pull ghcr.io/sshukla154/gavel/auction-service:master
+    #   kind load docker-image ghcr.io/sshukla154/gavel/auction-service:master --name gavel

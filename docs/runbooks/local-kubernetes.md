@@ -37,8 +37,8 @@ kubectl get nodes
 kind clusters are isolated from the host Docker daemon. Pull and load the image manually so ArgoCD can deploy it without internet access:
 
 ```bash
-docker pull ghcr.io/sshukla154/gavel/auction-service:shukla
-kind load docker-image ghcr.io/sshukla154/gavel/auction-service:shukla --name gavel
+docker pull ghcr.io/sshukla154/gavel/auction-service:master
+kind load docker-image ghcr.io/sshukla154/gavel/auction-service:master --name gavel
 ```
 
 ---
@@ -139,7 +139,7 @@ curl http://localhost:8081/actuator/health/readiness
 
 ## 8. GitOps loop in action
 
-Every push to the `shukla` branch:
+Every push to the `master` branch:
 1. CI builds and pushes a new image tagged `sha-<short>` to GHCR.
 2. The `update-helm-tag` CI job updates `helm/auction-service/values.yaml` with the new tag and pushes a `[skip ci]` commit.
 3. ArgoCD detects the values.yaml change (polling every 3 minutes by default) and rolls out the new image.

@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/sshukla154/gavel/auction-service
   pullPolicy: IfNotPresent
-  # Overridden by the CI update-helm-tag job on every push to shukla.
+  # Overridden by the CI update-helm-tag job on every push to master.
   tag: "sha-ffee676"
 
 imagePullSecrets: []

@@ -4,7 +4,7 @@
 
 image:
   # Use the branch tag when running locally; no need to rebuild on every SHA.
-  tag: shukla
+  tag: master
 
 env:
   SPRING_PROFILES_ACTIVE: local
