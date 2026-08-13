@@ -7,6 +7,9 @@
 #     -f k8s/postgres/values.yaml -n gavel --create-namespace
 
 auth:
+  # auth.database only provisions ONE database (hello_db, for auction-service).
+  # bid-service's bids_db is created by the initdb script below instead — the
+  # same mechanism infra/postgres/init.sql provides for docker-compose.
   database: hello_db
   username: postgres
   password: postgres
@@ -15,6 +18,12 @@ auth:
 primary:
   persistence:
     size: 1Gi
+  initdb:
+    scripts:
+      # Mirrors infra/postgres/init.sql (docker-compose's equivalent). Runs
+      # once, only on a first-ever startup against an empty data volume.
+      create-bids-db.sql: |
+        CREATE DATABASE bids_db;
 
 resources:
   requests:
