@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: notification-service
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/notifications_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/gavel}/protocol/openid-connect/certs
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # ErrorHandlingDeserializer: a malformed payload becomes a handled error routed to
+      # the DLT instead of an infinite deserialization crash-loop on the partition.
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      auto-offset-reset: earliest
+      group-id: notification-service
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.trusted.packages: "com.shukla.gavel.common.event"
+
+server:
+  port: 8083
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+gavel:
+  notification:
+    vapid:
+      # Dev-only keypair, generated once with the exact BouncyCastle recipe web-push-java's
+      # own CLI uses (see docs/adr/0014). NEVER regenerate in a real deployment — every
+      # existing PushSubscription is bound to this public key (RFC 8292); rotating it
+      # invalidates every subscriber and forces a fresh SPA-side re-subscribe. Override
+      # both via env vars for any environment beyond this laptop.
+      public-key: ${VAPID_PUBLIC_KEY:BOXzsDzpB3I1EDxs0kJtuLuOUtsDEzudBEifpr4pVutY4G23xwz8Q1lQ-IQEydGH5jXdkQCmLvRafm_Zp0asHkU}
+      private-key: ${VAPID_PRIVATE_KEY:AOxApYm38dkhUbwydEopTyzUgXQo4UEOQMmZMPMhGxv_}
+      subject: ${VAPID_SUBJECT:mailto:admin@gavel.local}

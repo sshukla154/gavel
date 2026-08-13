@@ -22,6 +22,7 @@
         <module>common</module>
         <module>services/auction-service</module>
         <module>services/bid-service</module>
+        <module>services/notification-service</module>
     </modules>
 
     <properties>
