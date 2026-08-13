@@ -1,14 +1,22 @@
 package com.shukla.gavel.bid;
 
+import com.shukla.gavel.bid.domain.AuctionStateRepository;
 import com.shukla.gavel.bid.domain.BidRepository;
+import com.shukla.gavel.common.event.AuctionClosedEvent;
+import com.shukla.gavel.common.event.BidRejectedEvent;
 import com.shukla.gavel.common.event.PlaceBidCommand;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.serializer.JacksonJsonDeserializer;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -18,7 +26,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +63,9 @@ class BidCommandConsumerIT {
 
     @Autowired
     BidRepository bidRepository;
+
+    @Autowired
+    AuctionStateRepository auctionStateRepository;
 
     @Test
     void placeBidCommandCreatesRowInDatabase() {
@@ -121,5 +135,48 @@ class BidCommandConsumerIT {
                         .contains("bidder-marker"));
 
         assertThat(bidRepository.findByAuctionId(auctionId)).hasSize(2);
+    }
+
+    @Test
+    void rejectsCommandForAuctionAlreadyMarkedClosed() throws Exception {
+        final UUID auctionId = UUID.randomUUID();
+
+        kafkaTemplate.send("auction.lifecycle.events", auctionId.toString(),
+                new AuctionClosedEvent(auctionId, Instant.now()));
+
+        // Lifecycle events land on a different topic than commands — no cross-topic
+        // ordering guarantee — so this waits for the projection write before sending the
+        // command, deterministically exercising the fencing path rather than the
+        // documented residual race window.
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat(auctionStateRepository.findById(auctionId)).isPresent());
+
+        final UUID commandId = UUID.randomUUID();
+        final PlaceBidCommand command = new PlaceBidCommand(
+                commandId, auctionId, "bidder-too-late", 50_000L, Instant.now());
+        kafkaTemplate.send("auction.bids.commands", auctionId.toString(), command);
+
+        final Map<String, Object> consumerProps = Map.of(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers(),
+                ConsumerConfig.GROUP_ID_CONFIG, "test-rejection-listener-" + UUID.randomUUID(),
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        final List<BidRejectedEvent> received = new ArrayList<>();
+        try (KafkaConsumer<String, BidRejectedEvent> consumer = new KafkaConsumer<>(
+                consumerProps, new StringDeserializer(), new JacksonJsonDeserializer<>(BidRejectedEvent.class))) {
+            consumer.subscribe(List.of("auction.bids.rejected"));
+
+            await().atMost(10, TimeUnit.SECONDS).until(() -> {
+                final ConsumerRecords<String, BidRejectedEvent> records = consumer.poll(Duration.ofMillis(200));
+                records.forEach(record -> received.add(record.value()));
+                return received.stream().anyMatch(e -> e.commandId().equals(commandId));
+            });
+        }
+
+        final BidRejectedEvent rejection = received.stream()
+                .filter(e -> e.commandId().equals(commandId))
+                .findFirst().orElseThrow();
+        assertThat(rejection.reason()).isEqualTo("AUCTION_CLOSED");
+        assertThat(rejection.auctionId()).isEqualTo(auctionId);
+        assertThat(bidRepository.findByAuctionId(auctionId)).isEmpty();
     }
 }

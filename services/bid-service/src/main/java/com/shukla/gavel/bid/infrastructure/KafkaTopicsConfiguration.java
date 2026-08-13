@@ -20,6 +20,14 @@ public class KafkaTopicsConfiguration {
                 .build();
     }
 
+    @Bean
+    public NewTopic auctionBidsRejectedTopic() {
+        return TopicBuilder.name("auction.bids.rejected")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
     /**
      * Dead-letter topic for the commands this service consumes. Same partition count as
      * the source so the recoverer's same-partition routing holds.
@@ -27,6 +35,17 @@ public class KafkaTopicsConfiguration {
     @Bean
     public NewTopic auctionBidsCommandsDeadLetterTopic() {
         return TopicBuilder.name("auction.bids.commands.DLT")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    /**
+     * Dead-letter topic for the lifecycle events this service consumes.
+     */
+    @Bean
+    public NewTopic auctionLifecycleEventsDeadLetterTopic() {
+        return TopicBuilder.name("auction.lifecycle.events.DLT")
                 .partitions(3)
                 .replicas(1)
                 .build();
