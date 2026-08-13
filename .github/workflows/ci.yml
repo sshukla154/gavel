@@ -63,6 +63,8 @@ jobs:
             dockerfile: ./Dockerfile
           - service: bid-service
             dockerfile: ./services/bid-service/Dockerfile
+          - service: notification-service
+            dockerfile: ./services/notification-service/Dockerfile
 
     steps:
       - name: Checkout
@@ -127,7 +129,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [auction-service, bid-service]
+        service: [auction-service, bid-service, notification-service]
 
     steps:
       - name: Log in to GHCR
@@ -180,7 +182,7 @@ jobs:
       - name: Update image tag and commit, per service
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          for service in auction-service bid-service; do
+          for service in auction-service bid-service notification-service; do
             VALUES_PATH="helm/${service}/values.yaml"
             sed -i "s/^  tag: .*/  tag: \"sha-${SHORT_SHA}\"/" "$VALUES_PATH"
             git add "$VALUES_PATH"
