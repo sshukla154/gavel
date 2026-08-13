@@ -1,0 +1,65 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/sshukla154/gavel/bid-service
+  pullPolicy: IfNotPresent
+  # Overridden by the CI update-helm-tag job on every push to master.
+  tag: "sha-a1b2c3d"
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 8082
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  SPRING_PROFILES_ACTIVE: prod
+  KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/gavel
+  # Assumption: Strimzi names the bootstrap Service "<kafka-cr-name>-kafka-bootstrap"; the
+  # in-cluster Kafka CR is named "gavel-kafka", so this targets "gavel-kafka-kafka-bootstrap".
+  KAFKA_BOOTSTRAP_SERVERS: gavel-kafka-kafka-bootstrap:9092
+
+# Datasource credentials — stored as a Kubernetes Secret.
+secret:
+  datasourceUrl: "jdbc:postgresql://postgres:5432/bids_db"
+  datasourceUsername: "postgres"
+  datasourcePassword: "postgres"
+
+ingress:
+  enabled: false
+  className: ""
+  host: bid-service.local
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8082
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8082
+  initialDelaySeconds: 20
+  periodSeconds: 5
+  failureThreshold: 3

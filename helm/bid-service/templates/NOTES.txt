@@ -1,0 +1,12 @@
+bid-service has been deployed.
+
+Forward the service port to your local machine:
+
+  kubectl port-forward svc/{{ include "bid-service.fullname" . }} 8082:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+
+Then verify the service is healthy:
+
+  curl http://localhost:8082/actuator/health
+
+Liveness probe:   GET /actuator/health/liveness
+Readiness probe:  GET /actuator/health/readiness
