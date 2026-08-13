@@ -22,7 +22,7 @@ import { AuctionsApiService, extractErrorMessage } from '../data/auctions-api.se
 import { AuctionStreamService } from '../data/auction-stream.service';
 import { CountdownComponent } from '../ui/countdown';
 
-type BidState = 'idle' | 'submitting' | 'awaiting' | 'confirmed' | 'unconfirmed';
+type BidState = 'idle' | 'submitting' | 'awaiting' | 'confirmed' | 'unconfirmed' | 'rejected';
 
 const BID_CONFIRMATION_TIMEOUT_MS = 10_000;
 const MAX_VISIBLE_BIDS = 50;
@@ -55,6 +55,9 @@ export class AuctionDetailComponent implements OnInit {
   readonly bidAmountEuros = signal<number | null>(null);
   readonly bidState = signal<BidState>('idle');
   readonly bidError = signal<string | null>(null);
+  readonly rejectionReason = signal<string | null>(null);
+
+  readonly justExtended = signal(false);
 
   readonly closing = signal(false);
   readonly closeError = signal<string | null>(null);
@@ -65,6 +68,7 @@ export class AuctionDetailComponent implements OnInit {
   private pendingBid: { amountCents: number; bidderId: string } | null = null;
   private pendingTimer: ReturnType<typeof setTimeout> | null = null;
   private flashTimer: ReturnType<typeof setTimeout> | null = null;
+  private extensionTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly displayPriceCents = computed(
     () => this.currentPriceCents() ?? this.auction()?.currentPriceCents ?? 0
@@ -100,11 +104,15 @@ export class AuctionDetailComponent implements OnInit {
       if (this.flashTimer !== null) {
         clearTimeout(this.flashTimer);
       }
+      if (this.extensionTimer !== null) {
+        clearTimeout(this.extensionTimer);
+      }
     });
   }
 
   submitBid(): void {
     this.bidError.set(null);
+    this.rejectionReason.set(null);
     const euros = this.bidAmountEuros();
     if (euros === null || Number.isNaN(euros)) {
       this.bidError.set('Enter a bid amount.');
@@ -225,6 +233,19 @@ export class AuctionDetailComponent implements OnInit {
         this.watchers.set(event.payload.count);
         break;
       }
+      case 'extended': {
+        this.auction.update((a) => (a ? { ...a, endsAt: event.payload.endsAt } : a));
+        this.triggerExtensionFlash();
+        break;
+      }
+      case 'closed': {
+        this.auction.update((a) => (a ? { ...a, status: 'CLOSED' } : a));
+        break;
+      }
+      case 'rejected': {
+        this.resolveRejection(event.payload.bidderId, event.payload.amountCents, event.payload.reason);
+        break;
+      }
     }
   }
 
@@ -264,6 +285,33 @@ export class AuctionDetailComponent implements OnInit {
     ) {
       this.confirmPending();
     }
+  }
+
+  private resolveRejection(bidderId: string, amountCents: number, reason: string): void {
+    if (
+      this.pendingBid === null ||
+      this.pendingBid.bidderId !== bidderId ||
+      this.pendingBid.amountCents !== amountCents
+    ) {
+      return; // a rejection for someone else's bid
+    }
+    this.pendingBid = null;
+    if (this.pendingTimer !== null) {
+      clearTimeout(this.pendingTimer);
+      this.pendingTimer = null;
+    }
+    this.rejectionReason.set(
+      reason === 'AUCTION_CLOSED' ? 'The auction closed before your bid was processed.' : reason
+    );
+    this.bidState.set('rejected');
+  }
+
+  private triggerExtensionFlash(): void {
+    if (this.extensionTimer !== null) {
+      clearTimeout(this.extensionTimer);
+    }
+    this.justExtended.set(true);
+    this.extensionTimer = setTimeout(() => this.justExtended.set(false), 4000);
   }
 
   private checkPendingAgainstBids(bids: BidSummary[]): void {

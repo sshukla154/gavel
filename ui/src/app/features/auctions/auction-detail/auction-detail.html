@@ -47,6 +47,9 @@
           <div class="meta-item">
             <span class="label">Ends in</span>
             <app-countdown [endsAt]="a.endsAt" />
+            @if (justExtended()) {
+              <span class="extended-flash">Extended!</span>
+            }
           </div>
           <div class="meta-item">
             <span class="label">Reserve</span>
@@ -108,6 +111,9 @@
               <p class="bid-status unconfirmed">
                 Bid not confirmed yet — it may have been outbid or rejected.
               </p>
+            }
+            @case ('rejected') {
+              <p class="bid-status rejected">{{ rejectionReason() }}</p>
             }
           }
         </section>

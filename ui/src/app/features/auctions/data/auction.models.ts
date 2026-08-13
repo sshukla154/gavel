@@ -74,7 +74,30 @@ export interface WatchersEvent {
   count: number;
 }
 
+/** endsAt was pushed out by the anti-snipe soft-close (checkpoint 2.4). */
+export interface ExtendedEvent {
+  auctionId: string;
+  endsAt: string;
+}
+
+/** The auction transitioned to CLOSED — via seller close or the auto-close scheduler. */
+export interface ClosedEvent {
+  auctionId: string;
+}
+
+/** A bid was fenced out instead of persisted — currently only reason 'AUCTION_CLOSED'. */
+export interface RejectedEvent {
+  commandId: string;
+  auctionId: string;
+  bidderId: string;
+  amountCents: number;
+  reason: string;
+}
+
 export type AuctionStreamEvent =
   | { type: 'snapshot'; payload: AuctionSnapshotEvent }
   | { type: 'bid'; payload: BidEvent }
-  | { type: 'watchers'; payload: WatchersEvent };
+  | { type: 'watchers'; payload: WatchersEvent }
+  | { type: 'extended'; payload: ExtendedEvent }
+  | { type: 'closed'; payload: ClosedEvent }
+  | { type: 'rejected'; payload: RejectedEvent };

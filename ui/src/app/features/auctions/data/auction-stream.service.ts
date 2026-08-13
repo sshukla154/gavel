@@ -5,6 +5,9 @@ import {
   AuctionSnapshotEvent,
   AuctionStreamEvent,
   BidEvent,
+  ClosedEvent,
+  ExtendedEvent,
+  RejectedEvent,
   WatchersEvent
 } from './auction.models';
 
@@ -182,6 +185,15 @@ export class AuctionStreamService implements OnDestroy {
         break;
       case 'watchers':
         this.eventsSubject.next({ type: 'watchers', payload: payload as WatchersEvent });
+        break;
+      case 'extended':
+        this.eventsSubject.next({ type: 'extended', payload: payload as ExtendedEvent });
+        break;
+      case 'closed':
+        this.eventsSubject.next({ type: 'closed', payload: payload as ClosedEvent });
+        break;
+      case 'rejected':
+        this.eventsSubject.next({ type: 'rejected', payload: payload as RejectedEvent });
         break;
       default:
         break; // unknown event names are ignored
