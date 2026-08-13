@@ -6,19 +6,19 @@ A real-time auction platform built as a senior-engineer portfolio project.
 
 | Item | State |
 |---|---|
-| Phase | 2.2 — bidding via Kafka events (done); next: 2.3 real-time bid feed |
-| Services | auction-service (8081) + bid-service (8082), Java 21 / Spring Boot 4.0.7 |
-| Frontend | Angular SPA with Keycloak login (4200) |
+| Phase | 3.1 — Web Push outbid notifications (done); next: 3.2 OpenSearch catalog |
+| Services | auction-service (8081) + bid-service (8082) + notification-service (8083), Java 21 / Spring Boot 4.0.7 |
+| Frontend | Angular SPA with Keycloak login (4200), live auction room, Web Push opt-in |
 | Auth | Keycloak 26 (`gavel` realm), JWT resource servers + service-to-service JWT relay |
-| Messaging | Kafka (KRaft) — `auction.bids.commands` / `auction.bids.events` |
-| Database | PostgreSQL 16 via Flyway — `hello_db` (auction) + `bids_db` (bid) |
-| Observability | OTel Collector → Prometheus / Tempo / Loki / Grafana |
-| CI / Docker | GitHub Actions → GHCR (auction-service + bid-service images, Trivy-scanned) |
-| Kubernetes | kind cluster + Helm charts (both services) + Strimzi Kafka + ArgoCD GitOps (manifests statically verified, not yet run against a live cluster — see ADR 0013) |
+| Messaging | Kafka (KRaft) — bid commands/events, auction lifecycle events, bid rejections |
+| Database | PostgreSQL 16 via Flyway — `hello_db` (auction) + `bids_db` (bid) + `notifications_db` (notification) |
+| Observability | OTel Collector → Prometheus / Tempo / Loki / Grafana (auction-service only) |
+| CI / Docker | GitHub Actions → GHCR (all three service images, Trivy-scanned) |
+| Kubernetes | kind cluster + Helm charts (all three services) + Strimzi Kafka + ArgoCD GitOps (manifests statically verified, not yet run against a live cluster — see ADR 0013) |
 
 ## Architecture
 
-Maven multi-module monorepo: `auction-service` owns auctions and the current price, `bid-service` owns the bid ledger, shared event records and DTOs live in `gavel-common`. Bidding is asynchronous — a `POST /api/v1/auctions/{id}/bids` returns 202 and the bid flows through Kafka. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system picture and [ADR 0010](docs/adr/0010-kafka-bidding-pipeline.md) for the messaging design.
+Maven multi-module monorepo: `auction-service` owns auctions, the current price, and the live SSE bid feed; `bid-service` owns the bid ledger and fences bids for closed auctions; `notification-service` sends Web Push alerts when a bidder is outbid. Shared event records and DTOs live in `gavel-common`. Bidding is asynchronous — a `POST /api/v1/auctions/{id}/bids` returns 202 and the bid flows through Kafka. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system picture, [ADR 0010](docs/adr/0010-kafka-bidding-pipeline.md) for the messaging design, and [ADR 0014](docs/adr/0014-web-push-notifications.md) for Web Push.
 
 ## Quickstart
 
@@ -28,7 +28,7 @@ mvn clean verify
 ```
 
 ```bash
-# Start the local infrastructure stack (Postgres, Kafka, Keycloak, bid-service, UI, observability)
+# Start the local infrastructure stack (Postgres, Kafka, Keycloak, bid-service, notification-service, UI, observability)
 docker compose up -d
 ```
 
@@ -44,9 +44,10 @@ Grafana is available at [http://localhost:3000](http://localhost:3000) (admin / 
 ```bash
 docker pull ghcr.io/sshukla154/gavel/auction-service:latest
 docker pull ghcr.io/sshukla154/gavel/bid-service:latest
+docker pull ghcr.io/sshukla154/gavel/notification-service:latest
 ```
 
-Both images run as UID 1001 (auction-service on 8081, bid-service on 8082). Flyway migrations run on startup; Postgres and Kafka must be reachable. The Actuator health endpoint at `/actuator/health` is wired as the Docker HEALTHCHECK.
+All three images run as UID 1001 (ports 8081/8082/8083 respectively). Flyway migrations run on startup; Postgres and Kafka must be reachable. The Actuator health endpoint at `/actuator/health` is wired as the Docker HEALTHCHECK.
 
 ## Tech stack
 
@@ -55,10 +56,11 @@ Both images run as UID 1001 (auction-service on 8081, bid-service on 8082). Flyw
 - Kafka (Jackson 3 JSON serde, idempotent consumers)
 - PostgreSQL 16 + Flyway
 - Keycloak 26 (OAuth2 / OIDC)
-- Angular SPA
+- Web Push / VAPID (`nl.martijndwars:web-push`)
+- Angular SPA (`@angular/service-worker` for Push)
 - OpenTelemetry → Prometheus / Tempo / Loki / Grafana
 - Maven multi-module monorepo
-- Kubernetes / Helm / ArgoCD
+- Kubernetes / Helm / ArgoCD / Strimzi
 
 ## Documentation
 

@@ -31,7 +31,7 @@
 
 | Feature | Status | Checkpoint |
 |---|---|---|
-| Email / push notifications | 📋 Planned | 3.1 |
+| Web Push outbid notifications (notification-service, VAPID) | ✅ Done | 3.1 |
 | OpenSearch auction catalog | 📋 Planned | 3.2 |
 
 ## Phase 4 — Polish + public release

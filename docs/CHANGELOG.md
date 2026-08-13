@@ -6,6 +6,18 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (3.1 — Web Push outbid notifications)
+- `notification-service` — new Spring Boot module (port 8083), consumes `auction.bids.events` with its own consumer group (`notification-service`), no changes to any producer
+- `HighestBidder` projection (Flyway V1) — per-auction highest bidder, upsert-if-higher guard (same monotonic-redelivery reasoning as `Auction.updateCurrentPrice`, ADR 0010)
+- `PushSubscription` table (Flyway V2) — one row per (bidder, browser) pair, endpoint-unique
+- `VapidPushService` + `WebPushConfiguration` — sends VAPID-signed Web Push via `nl.martijndwars:web-push:5.1.2` (the real Maven Central release; GitHub's `5.2.0` tag was never published there), explicit `Encoding.AES128GCM` (the library's zero-arg overload defaults to a legacy encoding modern browsers reject), deletes a subscription on 404/410
+- `PushSubscriptionController` — `GET /api/v1/notifications/vapid-public-key`, `POST`/`DELETE /api/v1/notifications/subscriptions`
+- auction-service `NotificationClient` + `NotificationController` — relays the three endpoints above (mirrors the existing `BidClient` relay pattern, ADR 0009); the SPA never talks to notification-service directly
+- Angular: `@angular/service-worker` (`SwPush`) wired for subscribe/unsubscribe and push display — push payload shaped `{"notification": {title, body, data}}` to match `ngsw-worker.js`'s own auto-display contract, no custom service-worker code needed
+- `helm/notification-service/` — third Helm chart, same pattern as `helm/bid-service/`; `k8s/argocd/notification-service-app.yaml`
+- CI docker/scan matrices and the `update-helm-tag` loop extended to a third service; `docker-compose.yaml` + `infra/postgres/init.sql` (`notifications_db`) updated
+- ADR 0014 — Web Push/VAPID library choice, the SPA-routing decision (relay through auction-service, not a second direct browser path), and the projection's idempotency design
+
 ### Added (0.5 — bid-service + Strimzi Kafka on kind/ArgoCD)
 - `helm/bid-service/` — new Helm chart mirroring `helm/auction-service/` (Chart.yaml, values.yaml, values-local.yaml, `_helpers.tpl`, deployment/service/secret/serviceaccount/ingress templates, NOTES.txt); port 8082, own `bids_db` datasource default, `KAFKA_BOOTSTRAP_SERVERS`, no OTel env (bid-service has none)
 - `k8s/kafka/kafka-cluster.yaml` — Strimzi `KafkaNodePool` + `Kafka` custom resources, KRaft mode, single combined controller+broker node sized for kind (`apiVersion: kafka.strimzi.io/v1` — verified current against live Strimzi docs, not the older `v1beta2`)
