@@ -1,6 +1,7 @@
 package com.shukla.gavel.auction.infrastructure;
 
 import com.shukla.gavel.common.event.BidPlacedEvent;
+import com.shukla.gavel.common.event.BidRejectedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -10,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -53,6 +55,25 @@ public class BidStreamBroadcaster {
         broadcast(event.auctionId(), SseEmitter.event()
                 .name("bid")
                 .id(event.bidId().toString())
+                .data(event, MediaType.APPLICATION_JSON));
+    }
+
+    public void broadcastAuctionExtended(final UUID auctionId, final Instant newEndsAt) {
+        broadcast(auctionId, SseEmitter.event()
+                .name("extended")
+                .data(Map.of("auctionId", auctionId, "endsAt", newEndsAt), MediaType.APPLICATION_JSON));
+    }
+
+    public void broadcastAuctionClosed(final UUID auctionId) {
+        broadcast(auctionId, SseEmitter.event()
+                .name("closed")
+                .data(Map.of("auctionId", auctionId), MediaType.APPLICATION_JSON));
+    }
+
+    public void broadcastBidRejected(final BidRejectedEvent event) {
+        broadcast(event.auctionId(), SseEmitter.event()
+                .name("rejected")
+                .id(event.commandId().toString())
                 .data(event, MediaType.APPLICATION_JSON));
     }
 

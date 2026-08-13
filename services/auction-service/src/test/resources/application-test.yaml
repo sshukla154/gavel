@@ -16,3 +16,11 @@ spring:
     # Kafka ITs rely on the Testcontainers broker's auto-topic-creation.
     admin:
       auto-create: false
+
+gavel:
+  auction:
+    auto-close:
+      # Off by default in tests: a live 5s sweep against every SpringBootTest's
+      # Postgres container would be noisy and unnecessary — ITs that need it override
+      # this property explicitly and call the scheduler bean directly.
+      enabled: false
