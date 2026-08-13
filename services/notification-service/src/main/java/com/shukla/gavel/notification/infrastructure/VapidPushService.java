@@ -50,10 +50,15 @@ public class VapidPushService {
      */
     public void sendOutbidNotification(final PushSubscription subscription, final UUID auctionId) {
         try {
+            // Shape required by @angular/service-worker's bundled ngsw-worker.js to
+            // auto-display a system notification on push — {"notification": {...}} where
+            // the inner object is passed straight to the Notification API. "data" round-
+            // trips to the click handler so the SPA can deep-link to the auction.
             final String payload = objectMapper.writeValueAsString(Map.of(
-                    "title", "You've been outbid",
-                    "body", "Someone placed a higher bid on an auction you're watching.",
-                    "auctionId", auctionId.toString()));
+                    "notification", Map.of(
+                            "title", "You've been outbid",
+                            "body", "Someone placed a higher bid on an auction you're watching.",
+                            "data", Map.of("auctionId", auctionId.toString()))));
             final Subscription.Keys keys =
                     new Subscription.Keys(subscription.getP256dh(), subscription.getAuthKey());
             final Notification notification =

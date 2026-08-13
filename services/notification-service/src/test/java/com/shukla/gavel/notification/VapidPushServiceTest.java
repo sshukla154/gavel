@@ -8,9 +8,11 @@ import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.security.Security;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -20,6 +22,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class VapidPushServiceTest {
+
+    static {
+        // Notification's constructor decodes p256dh as a real EC public key via a
+        // "BC"-named KeyFactory provider. In production, WebPushConfiguration's own
+        // static initializer registers it as a side effect of loading the Spring
+        // context — this plain unit test builds VapidPushService directly with no
+        // Spring context, so it must register the provider itself.
+        Security.addProvider(new BouncyCastleProvider());
+    }
 
     // A real, valid uncompressed P-256 point (65 bytes, starts with 0x04) — the
     // Notification constructor decodes p256dh as an actual EC public key, so a
