@@ -1,0 +1,54 @@
+# Bootstraps the Strimzi Cluster Operator itself.
+#
+# sync-wave -1: ArgoCD applies lower waves first, so this Application (and the
+# operator + its CRDs it installs) is fully synced before kafka-app.yaml's
+# Kafka/KafkaTopic custom resources are applied — those CRs need the operator's
+# CRDs and running controller to reconcile at all. auction-service-app.yaml and
+# postgres-app.yaml have no wave (default 0) since neither depends on the other.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: strimzi-kafka-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  # Remove this Application and all its resources when deleted from ArgoCD.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # Strimzi does not publish a classic (index.yaml) Helm chart repo for the
+    # operator — only an OCI chart, confirmed against the chart's own install
+    # command (Strimzi docs, proc-deploy-cluster-operator-helm-chart.adoc):
+    #   helm install strimzi-cluster-operator oci://quay.io/strimzi-helm/strimzi-kafka-operator
+    # ArgoCD's OCI-Helm source form splits that reference into repoURL (the
+    # registry + namespace) and chart (the chart name within it).
+    #
+    # NOTE: depending on the ArgoCD version/config, anonymous OCI Helm sources
+    # may need the registry pre-registered as a Repository, e.g.:
+    #   argocd repo add quay.io/strimzi-helm --type helm --name strimzi-helm --enable-oci
+    # This was not verified against a live ArgoCD instance in this environment
+    # (no cluster available) — if the sync fails with a repo-resolution error,
+    # register the repo first.
+    repoURL: quay.io/strimzi-helm
+    chart: strimzi-kafka-operator
+    # Pin to the verified-current stable release; see k8s/kafka/kafka-cluster.yaml
+    # for why the Kafka CR's version/metadataVersion must stay in step with this.
+    targetRevision: 1.1.0
+    # No custom helm values set: the chart's default single-namespace watch
+    # (its own install namespace) is what we want — the Kafka and KafkaTopic
+    # CRs it manages live in the same "gavel" namespace as every other Gavel
+    # component (see kafka-cluster.yaml / kafka-topics.yaml). Widen with the
+    # watchNamespaces/watchAnyNamespace helm values only if that changes.
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gavel
+  syncPolicy:
+    automated:
+      # Delete resources no longer defined in git.
+      prune: true
+      # Re-apply if the live state drifts from the desired state.
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

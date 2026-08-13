@@ -1,0 +1,110 @@
+# KafkaTopic CRs for the topics Gavel's services declare at runtime via Spring
+# Kafka NewTopic beans (see KafkaTopicsConfiguration.java under
+# services/auction-service and services/bid-service). Both services also
+# self-declare these topics through KafkaAdmin on startup, so these CRs exist
+# for cluster-admin visibility and GitOps parity, not because the apps need them.
+#
+# metadata.labels["strimzi.io/cluster"] must equal the Kafka CR's metadata.name
+# (gavel-kafka, see kafka-cluster.yaml) — the Topic Operator ignores KafkaTopic
+# resources that don't carry this label.
+#
+# The four ".DLT" topics have an uppercase suffix in their real Kafka topic
+# name, which is not a valid Kubernetes object name (DNS subdomain names must
+# be lowercase). For those, metadata.name is a lowercased/hyphenated stand-in
+# and spec.topicName carries the actual, case-sensitive Kafka topic name — per
+# the KafkaTopicSpec schema reference: "It is recommended to not set
+# [topicName] unless the topic name is not a valid Kubernetes resource name."
+# The other four topic names are already lowercase and dot-separated, which
+# is a valid Kubernetes object name, so metadata.name doubles as the topic name
+# and no spec.topicName override is needed.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: auction.bids.commands
+  namespace: gavel
+  labels:
+    strimzi.io/cluster: gavel-kafka
+spec:
+  partitions: 3
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: auction.bids.events
+  namespace: gavel
+  labels:
+    strimzi.io/cluster: gavel-kafka
+spec:
+  partitions: 3
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: auction.lifecycle.events
+  namespace: gavel
+  labels:
+    strimzi.io/cluster: gavel-kafka
+spec:
+  partitions: 3
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: auction.bids.rejected
+  namespace: gavel
+  labels:
+    strimzi.io/cluster: gavel-kafka
+spec:
+  partitions: 3
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: auction-bids-commands-dlt
+  namespace: gavel
+  labels:
+    strimzi.io/cluster: gavel-kafka
+spec:
+  topicName: auction.bids.commands.DLT
+  partitions: 3
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: auction-bids-events-dlt
+  namespace: gavel
+  labels:
+    strimzi.io/cluster: gavel-kafka
+spec:
+  topicName: auction.bids.events.DLT
+  partitions: 3
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: auction-lifecycle-events-dlt
+  namespace: gavel
+  labels:
+    strimzi.io/cluster: gavel-kafka
+spec:
+  topicName: auction.lifecycle.events.DLT
+  partitions: 3
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: auction-bids-rejected-dlt
+  namespace: gavel
+  labels:
+    strimzi.io/cluster: gavel-kafka
+spec:
+  topicName: auction.bids.rejected.DLT
+  partitions: 3
+  replicas: 1

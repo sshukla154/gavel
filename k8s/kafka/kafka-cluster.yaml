@@ -1,0 +1,80 @@
+# Strimzi Kafka cluster for the Gavel kind dev environment: a single combined
+# controller+broker node running KRaft mode (no ZooKeeper). Sized for a laptop
+# kind cluster, not production.
+#
+# Deployed into the "gavel" namespace — the same namespace every other Gavel
+# component uses (auction-service, bid-service, postgres) — so in-cluster
+# clients can reach it via the plain bootstrap Service name with no
+# cross-namespace FQDN: gavel-kafka-kafka-bootstrap:9092.
+#
+# Requires the Strimzi Cluster Operator and its CRDs to already be installed
+# and watching this namespace — see k8s/argocd/kafka-operator-app.yaml (synced
+# first via sync-wave -1). Applied to the cluster by k8s/argocd/kafka-app.yaml.
+#
+# apiVersion kafka.strimzi.io/v1 is current as of Strimzi 1.0.0+ (v1beta2 and
+# older API versions were removed — see the Strimzi Helm chart README's "From
+# Strimzi 1.0.0 on, we support only the v1 API version" notice). Structure below
+# mirrors the pinned 1.1.0 example verbatim, aside from the name, namespace,
+# and a smaller storage size:
+# https://strimzi.io/examples/latest/kafka/kafka-single-node.yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: gavel-kafka-pool
+  namespace: gavel
+  labels:
+    # Associates this node pool with the Kafka cluster below (metadata.name
+    # there must match exactly — this is how Strimzi links the two resources).
+    strimzi.io/cluster: gavel-kafka
+spec:
+  replicas: 1
+  roles:
+    - controller
+    - broker
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        # Upstream example uses 100Gi; shrunk for a kind cluster on Docker
+        # Desktop, where PVC storage grows the WSL2/Docker Desktop virtual disk.
+        size: 5Gi
+        kraftMetadata: shared
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: gavel-kafka
+  namespace: gavel
+spec:
+  kafka:
+    # Must stay in sync with whatever Kafka versions the operator build
+    # actually supports. Strimzi 1.1.0's release notes: "adds Apache Kafka
+    # 4.3.0 and 4.2.1 support while dropping 4.1.x compatibility."
+    version: 4.3.0
+    metadataVersion: 4.3-IV0
+    listeners:
+      # In-cluster access for Gavel's own services (auction-service, bid-service),
+      # both of which run in this same "gavel" namespace: bootstrap DNS name is
+      # the plain Service name gavel-kafka-kafka-bootstrap:9092 (or :9093 for TLS).
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+    # Single-broker dev cluster: replication/min-ISR settings must be 1, or the
+    # broker cannot satisfy its own default topic configs on startup.
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+  entityOperator:
+    # topicOperator is required for the KafkaTopic CRs in kafka-topics.yaml to
+    # be reconciled at all — without it those CRs just sit there unmanaged.
+    topicOperator: {}
+    userOperator: {}
