@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notification-service
+  namespace: argocd
+  # Remove this Application and all its resources when deleted from ArgoCD.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sshukla154/gavel.git
+    targetRevision: master
+    path: helm/notification-service
+    helm:
+      valueFiles:
+        - values-local.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gavel
+  syncPolicy:
+    automated:
+      # Delete resources no longer defined in git.
+      prune: true
+      # Re-apply if the live state drifts from the desired state.
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

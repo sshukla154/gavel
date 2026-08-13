@@ -1,0 +1,72 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/sshukla154/gavel/notification-service
+  pullPolicy: IfNotPresent
+  # Overridden by the CI update-helm-tag job on every push to master.
+  tag: "sha-a1b2c3d"
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 8083
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  SPRING_PROFILES_ACTIVE: prod
+  KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/gavel
+  # Assumption: Strimzi names the bootstrap Service "<kafka-cr-name>-kafka-bootstrap"; the
+  # in-cluster Kafka CR is named "gavel-kafka", so this targets "gavel-kafka-kafka-bootstrap".
+  KAFKA_BOOTSTRAP_SERVERS: gavel-kafka-kafka-bootstrap:9092
+  # VAPID keypair for Web Push (RFC 8292). Placeholder values only — the real dev keypair
+  # already ships as the default in application.yaml. This override is optional/documentary;
+  # set real values here for any environment beyond a laptop, and never rotate the public key
+  # once subscribers exist (every PushSubscription is bound to it).
+  VAPID_PUBLIC_KEY: "BN9k3mQzX7vLpRt2WsYcHjFbUeDgKiOqAaCzXyVwStRq5Nm8Bo1Lp4Ec7Fd0Gh3Ij6Kl9Mn2Op5Qr8Ws1Yt"
+  VAPID_PRIVATE_KEY: "AN9k3mQzX7vLpRt2WsYcHjFbUeDgKiOqAaCzXyVwSt"
+  VAPID_SUBJECT: "mailto:admin@gavel.local"
+
+# Datasource credentials — stored as a Kubernetes Secret.
+secret:
+  datasourceUrl: "jdbc:postgresql://postgres:5432/notifications_db"
+  datasourceUsername: "postgres"
+  datasourcePassword: "postgres"
+
+ingress:
+  enabled: false
+  className: ""
+  host: notification-service.local
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8083
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8083
+  initialDelaySeconds: 20
+  periodSeconds: 5
+  failureThreshold: 3

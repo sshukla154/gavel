@@ -1,0 +1,30 @@
+# Local kind-cluster overrides.
+# Apply with: helm upgrade --install notification-service ./helm/notification-service \
+#               -f helm/notification-service/values-local.yaml -n gavel --create-namespace
+
+image:
+  # Use the branch tag when running locally; no need to rebuild on every SHA.
+  tag: master
+
+env:
+  SPRING_PROFILES_ACTIVE: local
+  # Keycloak is deployed by docker-compose on the host (port 8180 on host → 8080 in container).
+  KEYCLOAK_ISSUER_URI: http://host.docker.internal:8180/realms/gavel
+  # KAFKA_BOOTSTRAP_SERVERS is intentionally NOT overridden here: unlike Keycloak, Kafka runs
+  # inside the kind cluster itself (Strimzi), so the values.yaml in-cluster default applies
+  # to the local kind deployment too — no host.docker.internal routing needed.
+
+ingress:
+  enabled: true
+  className: nginx
+  host: notification-service.local
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi

@@ -1,0 +1,12 @@
+notification-service has been deployed.
+
+Forward the service port to your local machine:
+
+  kubectl port-forward svc/{{ include "notification-service.fullname" . }} 8083:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+
+Then verify the service is healthy:
+
+  curl http://localhost:8083/actuator/health
+
+Liveness probe:   GET /actuator/health/liveness
+Readiness probe:  GET /actuator/health/readiness
