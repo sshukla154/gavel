@@ -40,6 +40,10 @@ bid:
   service:
     url: ${BID_SERVICE_URL:http://localhost:8082}
 
+notification:
+  service:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+
 server:
   port: 8081
   shutdown: graceful
