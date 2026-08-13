@@ -30,6 +30,10 @@ spec:
               value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
             - name: KEYCLOAK_ISSUER_URI
               value: {{ .Values.env.KEYCLOAK_ISSUER_URI | quote }}
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ .Values.env.KAFKA_BOOTSTRAP_SERVERS | quote }}
+            - name: BID_SERVICE_URL
+              value: {{ .Values.env.BID_SERVICE_URL | quote }}
             - name: SPRING_DATASOURCE_URL
               valueFrom:
                 secretKeyRef:

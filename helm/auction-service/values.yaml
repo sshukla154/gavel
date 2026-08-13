@@ -31,6 +31,13 @@ env:
   SPRING_PROFILES_ACTIVE: prod
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
   KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/gavel
+  # Same-namespace Strimzi bootstrap Service (see k8s/kafka/kafka-cluster.yaml);
+  # was missing entirely before the Kafka checkpoints — silently defaulted to
+  # localhost:9092 inside the pod, which cannot work in-cluster.
+  KAFKA_BOOTSTRAP_SERVERS: gavel-kafka-kafka-bootstrap:9092
+  # Same-namespace bid-service Service DNS name (bare "bid-service", see the
+  # bid-service chart's fullname template) — was also missing before.
+  BID_SERVICE_URL: http://bid-service:8082
 
 # Datasource credentials — stored as a Kubernetes Secret.
 secret:

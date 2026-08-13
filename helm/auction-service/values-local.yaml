@@ -14,6 +14,9 @@ env:
   OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4318
   # Keycloak is deployed by docker-compose on the host (port 8180 on host → 8080 in container).
   KEYCLOAK_ISSUER_URI: http://host.docker.internal:8180/realms/gavel
+  # KAFKA_BOOTSTRAP_SERVERS and BID_SERVICE_URL are intentionally NOT overridden
+  # here: unlike Keycloak/OTel, both Kafka (Strimzi) and bid-service run inside
+  # the kind cluster itself, so the values.yaml in-cluster defaults apply as-is.
 
 ingress:
   enabled: true
