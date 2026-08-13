@@ -3,6 +3,7 @@
     <h1>Gavel Auctions</h1>
     <div class="header-actions">
       <a routerLink="/auctions/new" class="btn btn-primary">Create auction</a>
+      <app-notification-toggle />
       <button class="btn btn-logout" (click)="logout()">Logout ({{ username }})</button>
     </div>
   </header>

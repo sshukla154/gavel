@@ -6,10 +6,11 @@ import Keycloak from 'keycloak-js';
 import { AuctionResponse } from '../data/auction.models';
 import { AuctionsApiService, extractErrorMessage } from '../data/auctions-api.service';
 import { CountdownComponent } from '../ui/countdown';
+import { NotificationToggleComponent } from '../../notifications/ui/notification-toggle';
 
 @Component({
   selector: 'app-auction-list',
-  imports: [CurrencyPipe, RouterLink, CountdownComponent],
+  imports: [CurrencyPipe, RouterLink, CountdownComponent, NotificationToggleComponent],
   templateUrl: './auction-list.html',
   styleUrl: './auction-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
