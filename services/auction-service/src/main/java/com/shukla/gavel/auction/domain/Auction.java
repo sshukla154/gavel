@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -67,6 +68,23 @@ public class Auction {
             throw new IllegalStateException("Cannot close auction with status: " + this.status);
         }
         this.status = AuctionStatus.CLOSED;
+    }
+
+    public boolean hasEnded(final Instant now) {
+        return now.isAfter(this.endsAt);
+    }
+
+    /**
+     * True when a bid landing at {@code now} falls inside the anti-snipe window before
+     * close — the trigger for extending {@code endsAt} rather than letting the auction
+     * end mid-bid-war.
+     */
+    public boolean isWithinExtensionWindow(final Instant now, final Duration window) {
+        return this.status == AuctionStatus.OPEN && !now.isBefore(this.endsAt.minus(window));
+    }
+
+    public void extend(final Duration by) {
+        this.endsAt = this.endsAt.plus(by);
     }
 
     /**
