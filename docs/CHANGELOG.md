@@ -6,6 +6,16 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (2.4 — Auction closing correctness)
+- `AuctionClosedEvent` / `BidRejectedEvent` shared records; new topics `auction.lifecycle.events` and `auction.bids.rejected` (+ matching `.DLT`s), same producer-declares/consumer-DLTs convention as ADR 0010
+- Fixed real bug: `AuctionService.placeBid` now rejects bids after `endsAt` even when a scheduler sweep hasn't caught up yet (previously only checked `status`)
+- `AuctionAutoCloseScheduler` — sweeps every 5s, closes OPEN auctions past `endsAt` via `SELECT … FOR UPDATE SKIP LOCKED` (multi-replica safe, no new locking dependency), publishes `AuctionClosedEvent` and an SSE `closed` event per closed auction
+- Anti-snipe soft-close: a confirmed bid in the final 60s of `endsAt` extends it by 60s (`Auction.isWithinExtensionWindow`/`extend`), pushed live as an SSE `extended` event
+- bid-service `auction_state` projection (Flyway V3) fed by `AuctionClosedEvent`; `BidCommandConsumer` now fences — rejects commands for auctions it knows are closed instead of persisting them, publishing `BidRejectedEvent` (reason `AUCTION_CLOSED`)
+- auction-service forwards `BidRejectedEvent` onto the live SSE feed as a `rejected` event, so a bidder who loses the closing race gets an explicit answer
+- Tests: `AuctionSoftCloseTest`, `AuctionServiceClosingTest` (pure unit), `AuctionAutoCloseSchedulerIT` (Postgres), `BidCommandConsumerIT.rejectsCommandForAuctionAlreadyMarkedClosed` (Kafka+Postgres, proves fencing end to end via a raw consumer on `auction.bids.rejected`)
+- ADR 0012 — closing-correctness decision record: DB-locked scheduler over ShedLock, lifecycle topic over a partition-barrier saga, the documented residual cross-topic race and why the existing monotonic price guard bounds its risk
+
 ### Added (2.3 — Live auction room)
 - `GET /api/v1/auctions/{id}/stream` — SSE live bid feed (auction-service): snapshot on every (re)connect (current price, watcher count, recent bids), then live `bid` events; `watchers` and `heartbeat` events; per-auction connection cap (429 beyond 200 watchers)
 - `BidStreamBroadcaster` — per-instance SSE emitter registry with heartbeat eviction of dead connections

@@ -24,7 +24,7 @@
 | Auction service (create, list, close) | ✅ Done | 2.1 |
 | Bidding via Kafka events | ✅ Done | 2.2 |
 | Live auction room: SSE bid feed, auction UI, presence, DLT hardening | ✅ Done | 2.3 |
-| Auction closing correctness: scheduler at endsAt, soft-close, fencing | 📋 Planned | 2.4 |
+| Auction closing correctness: scheduler at endsAt, soft-close, fencing | ✅ Done | 2.4 |
 
 ## Phase 3 — Notifications + search
 
