@@ -4,6 +4,7 @@
 - **Date:** 2026-05-20
 - **Deciders:** Seemant
 - **Updated:** 2026-08-12 — repo branch renamed `shukla` → `master` (Phase 1.3); references below updated to match
+- **Updated:** 2026-08-13 — bid-service and an in-cluster Kafka (Strimzi) joined the GitOps-managed set, closing the Phase 2 k8s deployment debt; see ADR 0013
 
 ## Context
 
@@ -13,8 +14,8 @@ The project needs a deployment mechanism that makes Kubernetes cluster state aud
 
 Use **ArgoCD** as the GitOps operator. The repo itself is the source of truth. The deployment model:
 
-- ArgoCD watches `helm/auction-service/` on the `master` branch.
-- `values-local.yaml` overrides are applied for the kind cluster (branch tag, reduced resources, host OTel endpoint).
+- ArgoCD watches `helm/auction-service/` and `helm/bid-service/` (plus the raw Strimzi Kafka manifests under `k8s/kafka/`) on the `master` branch.
+- `values-local.yaml` overrides are applied for the kind cluster (branch tag, reduced resources, host OTel/Keycloak endpoints — Kafka and bid-service, unlike Keycloak/OTel, run inside the cluster itself, so they need no host-routing override; see ADR 0013).
 - `automated.prune: true` removes Kubernetes resources deleted from Git. `selfHeal: true` reverts manual `kubectl` changes.
 - The **app-of-apps** pattern (`k8s/argocd/app-of-apps.yaml`) bootstraps all ArgoCD `Application` resources from a single root application, so a fresh cluster needs only one `kubectl apply`.
 

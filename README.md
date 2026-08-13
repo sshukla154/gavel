@@ -14,7 +14,7 @@ A real-time auction platform built as a senior-engineer portfolio project.
 | Database | PostgreSQL 16 via Flyway — `hello_db` (auction) + `bids_db` (bid) |
 | Observability | OTel Collector → Prometheus / Tempo / Loki / Grafana |
 | CI / Docker | GitHub Actions → GHCR (auction-service + bid-service images, Trivy-scanned) |
-| Kubernetes | kind cluster + Helm chart + ArgoCD GitOps (auction-service only so far) |
+| Kubernetes | kind cluster + Helm charts (both services) + Strimzi Kafka + ArgoCD GitOps (manifests statically verified, not yet run against a live cluster — see ADR 0013) |
 
 ## Architecture
 

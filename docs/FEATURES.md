@@ -8,6 +8,7 @@
 | PostgreSQL + Flyway + observability stack | ✅ Done | 0.2 |
 | Multi-stage Docker + CI to GHCR | ✅ Done | 0.3 |
 | kind + Helm + ArgoCD GitOps | ✅ Done | 0.4 |
+| bid-service Helm chart + Strimzi Kafka on kind/ArgoCD | ✅ Done (unverified live — see ADR 0013) | 0.5 |
 
 ## Phase 1 — Identity + Angular shell
 

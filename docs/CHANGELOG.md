@@ -6,6 +6,17 @@ Versions map to phases: `0.x.0` = Phase 0, `1.x.0` = Phase 1, etc.
 
 ## [Unreleased]
 
+### Added (0.5 — bid-service + Strimzi Kafka on kind/ArgoCD)
+- `helm/bid-service/` — new Helm chart mirroring `helm/auction-service/` (Chart.yaml, values.yaml, values-local.yaml, `_helpers.tpl`, deployment/service/secret/serviceaccount/ingress templates, NOTES.txt); port 8082, own `bids_db` datasource default, `KAFKA_BOOTSTRAP_SERVERS`, no OTel env (bid-service has none)
+- `k8s/kafka/kafka-cluster.yaml` — Strimzi `KafkaNodePool` + `Kafka` custom resources, KRaft mode, single combined controller+broker node sized for kind (`apiVersion: kafka.strimzi.io/v1` — verified current against live Strimzi docs, not the older `v1beta2`)
+- `k8s/kafka/kafka-topics.yaml` — 8 `KafkaTopic` CRs for the topics from ADR 0010/0012 and their `.DLT`s
+- `k8s/argocd/kafka-operator-app.yaml` (sync-wave `-1`), `kafka-app.yaml`, `bid-service-app.yaml` — new ArgoCD Applications, auto-picked-up by the existing `app-of-apps.yaml` directory watch
+- Fixed: `helm/auction-service` had no `KAFKA_BOOTSTRAP_SERVERS` or `BID_SERVICE_URL` env vars at all — both silently defaulted to `localhost` inside the pod
+- Fixed: the k8s Postgres Application only provisioned `hello_db` — added `primary.initdb.scripts` to also create `bids_db`, mirroring `infra/postgres/init.sql`
+- `ci.yml`'s `update-helm-tag` job now bumps both services' chart tags (sequential loop in one job, not a matrix, to avoid two jobs racing to push the same branch)
+- `docs/runbooks/local-kubernetes.md` rewritten for both services + Kafka, switched to the single `kubectl apply -f k8s/argocd/app-of-apps.yaml` bootstrap ADR 0006 always intended
+- ADR 0013 — Strimzi over Bitnami, single-namespace design, sync-wave ordering, and an explicit note that this was verified statically (`helm lint`/`helm template`/YAML syntax) but not against a live kind cluster (none available in this environment)
+
 ### Added (2.4 — Auction closing correctness)
 - `AuctionClosedEvent` / `BidRejectedEvent` shared records; new topics `auction.lifecycle.events` and `auction.bids.rejected` (+ matching `.DLT`s), same producer-declares/consumer-DLTs convention as ADR 0010
 - Fixed real bug: `AuctionService.placeBid` now rejects bids after `endsAt` even when a scheduler sweep hasn't caught up yet (previously only checked `status`)
