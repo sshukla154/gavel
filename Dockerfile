@@ -21,6 +21,7 @@ COPY pom.xml .
 COPY common/pom.xml common/
 COPY services/auction-service/pom.xml services/auction-service/
 COPY services/bid-service/pom.xml services/bid-service/
+COPY services/notification-service/pom.xml services/notification-service/
 
 # gavel-common is a project-local module, not available from any remote repo.
 # Copy its source so Maven can compile and install it into the local .m2 cache.
