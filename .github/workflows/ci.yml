@@ -106,12 +106,17 @@ jobs:
       # cache store — subsequent builds reuse the deps and build stages and
       # typically complete in under 2 minutes.
       # push is false on PRs (image is built to validate the Dockerfile, not pushed).
+      # pull: true forces a fresh check of the FROM base images on every build —
+      # without it, a cached base-image layer (e.g. eclipse-temurin:21-jre-jammy)
+      # can silently stay stale across runs, shipping OS-package CVEs that were
+      # already fixed upstream (hit in practice: CVE-2026-45447 in libssl3).
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
+          pull: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}

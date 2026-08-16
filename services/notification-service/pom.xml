@@ -81,6 +81,18 @@
             <groupId>nl.martijndwars</groupId>
             <artifactId>web-push</artifactId>
             <version>5.1.2</version>
+            <exclusions>
+                <!-- Pulls in org.asynchttpclient:async-http-client (and its own Netty
+                     dependency) solely for web-push's PushAsyncService, which this code
+                     never uses (VapidPushService uses the synchronous PushService, backed
+                     by httpasyncclient instead). Excluded rather than version-pinned: 5
+                     HIGH CVEs (CVE-2026-59901/55831/55833/56745/45300) traced back to this
+                     unused Netty/async-http-client chain via Trivy. -->
+                <exclusion>
+                    <groupId>org.asynchttpclient</groupId>
+                    <artifactId>async-http-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
