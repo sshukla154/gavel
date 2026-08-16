@@ -4,7 +4,7 @@ image:
   repository: ghcr.io/sshukla154/gavel/bid-service
   pullPolicy: IfNotPresent
   # Overridden by the CI update-helm-tag job on every push to master.
-  tag: "sha-184427c"
+  tag: "sha-e48a7f4"
 
 imagePullSecrets: []
 
