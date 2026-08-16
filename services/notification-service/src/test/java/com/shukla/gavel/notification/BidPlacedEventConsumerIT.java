@@ -6,6 +6,7 @@ import com.shukla.gavel.notification.domain.PushSubscription;
 import com.shukla.gavel.notification.domain.PushSubscriptionRepository;
 import com.shukla.gavel.notification.infrastructure.VapidPushService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -93,8 +94,16 @@ class BidPlacedEventConsumerIT {
         kafkaTemplate.send("auction.bids.events", auctionId.toString(),
                 new BidPlacedEvent(UUID.randomUUID(), auctionId, "bidder-winner", 120_000L, Instant.now()));
 
-        verify(vapidPushService, timeout(10_000))
-                .sendOutbidNotification(eq(previousLeaderSubscription), eq(auctionId));
+        // PushSubscription has no equals()/hashCode() (matches every other entity in this
+        // codebase — plain hand-written getters only), and the consumer re-fetches the
+        // subscription from the repository rather than reusing the exact object saved
+        // above, so eq(previousLeaderSubscription) would compare by identity and never
+        // match. Capture the actual argument and assert on its fields instead.
+        final ArgumentCaptor<PushSubscription> notified = ArgumentCaptor.forClass(PushSubscription.class);
+        verify(vapidPushService, timeout(10_000)).sendOutbidNotification(notified.capture(), eq(auctionId));
+        assertThat(notified.getValue().getEndpoint()).isEqualTo(previousLeaderSubscription.getEndpoint());
+        assertThat(notified.getValue().getBidderId()).isEqualTo("bidder-outbid");
+
         assertThat(highestBidderRepository.findById(auctionId).orElseThrow().getBidderId())
                 .isEqualTo("bidder-winner");
         assertThat(highestBidderRepository.findById(auctionId).orElseThrow().getAmountCents())
